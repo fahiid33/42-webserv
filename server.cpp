@@ -8,8 +8,8 @@
 #include <fstream>      // std::ifstream
 
 
-#define PORT 8080
-int main(int argc, char const *argv[])
+#define PORT 2222
+int main()
 {
     int server_fd, new_socket; long valread;
     struct sockaddr_in address;
@@ -20,7 +20,6 @@ int main(int argc, char const *argv[])
     file.open("index.html");
     std::string str;
     std::getline(file, str, '\0');
-    std::cout << str.length() << std::endl;
     hello += std::to_string(str.length());
     hello += "\n\n";
     hello += str;
@@ -36,8 +35,7 @@ int main(int argc, char const *argv[])
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons( PORT );
     
-    // memset(address.sin_zero, '\0', sizeof address.sin_zero);
-    
+    memset(address.sin_zero, '\0', sizeof address.sin_zero);
     
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0)
     {
