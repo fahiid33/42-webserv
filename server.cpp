@@ -1,29 +1,36 @@
 #include "server.hpp"
 
 
-std::map<std::string, std::string> contentTypes = {
-    {"html", "text/html"},
-    {"htm", "text/html"},
-    {"txt", "text/plain"},
-    {"jpeg", "image/jpeg"},
-    {"jpg", "image/jpeg"},
-    {"png", "image/png"},
-    {"gif", "image/gif"},
-    {"mp4", "video/mp4"},
-    // Add more file extensions and their corresponding content types here
-};
 
-std::string getContentType(const std::string& fileName) {
+std::map<std::string, std::string> getMime_types(void)
+{
+    std::map<std::string, std::string> mimeTypes;
+    std::ifstream file("mime.types");
+    std::string line;
+    while (std::getline(file, line)) {
+        std::istringstream iss(line);
+        std::string extension;
+        std::string contentType;
+        if (iss >> extension >> contentType) {
+            mimeTypes[extension] = contentType;
+        }
+    }
+
+    return mimeTypes;
+}
+
+std::string getContentType(const std::string& fileName, const std::map<std::string, std::string>& mimeTypes) {
     size_t dotPos = fileName.find_last_of('.');
     if (dotPos != std::string::npos) {
         std::string extension = fileName.substr(dotPos + 1);
-        auto it = contentTypes.find(extension);
-        if (it != contentTypes.end()) {
+        auto it = mimeTypes.find(extension);
+        if (it != mimeTypes.end()) {
             return it->second;
         }
     }
-    return "application/octet-stream"; // Default content type
+    return "application/octet-stream";
 }
+
 
 std::string auto_indexing(const char *dir)
 {
@@ -54,7 +61,8 @@ std::string auto_indexing(const char *dir)
 std::string prepare_response(const char *file_name,const char *dir)
 {
     std::string resp = "HTTP/1.1 200 OK\nContent-Type: ";
-    std::string contentType = getContentType(file_name);
+    std::map<std::string, std::string> mimeTypes = getMime_types();
+    std::string contentType = getContentType(file_name, mimeTypes);
     resp += contentType;
     resp += "\nContent-Length:";
     std::ifstream file;
