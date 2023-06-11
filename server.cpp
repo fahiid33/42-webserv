@@ -1,7 +1,29 @@
-#include <stdio.h>
-#include <sys/socket.h>
 #include "server.hpp"
 
+
+std::map<std::string, std::string> contentTypes = {
+    {"html", "text/html"},
+    {"htm", "text/html"},
+    {"txt", "text/plain"},
+    {"jpeg", "image/jpeg"},
+    {"jpg", "image/jpeg"},
+    {"png", "image/png"},
+    {"gif", "image/gif"},
+    {"mp4", "video/mp4"},
+    // Add more file extensions and their corresponding content types here
+};
+
+std::string getContentType(const std::string& fileName) {
+    size_t dotPos = fileName.find_last_of('.');
+    if (dotPos != std::string::npos) {
+        std::string extension = fileName.substr(dotPos + 1);
+        auto it = contentTypes.find(extension);
+        if (it != contentTypes.end()) {
+            return it->second;
+        }
+    }
+    return "application/octet-stream"; // Default content type
+}
 
 std::string auto_indexing(const char *dir)
 {
@@ -31,7 +53,10 @@ std::string auto_indexing(const char *dir)
 
 std::string prepare_response(const char *file_name,const char *dir)
 {
-    std::string resp = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length:";
+    std::string resp = "HTTP/1.1 200 OK\nContent-Type: ";
+    std::string contentType = getContentType(file_name);
+    resp += contentType;
+    resp += "\nContent-Length:";
     std::ifstream file;
     file.open(file_name);
     if (!file.is_open() || access(dir, R_OK) == -1)
@@ -59,7 +84,7 @@ std::string prepare_response(const char *file_name,const char *dir)
 }
 void    create_socket()
 {
-     int server_fd, new_socket;
+    int server_fd, new_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
     std::istringstream iss;

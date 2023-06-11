@@ -128,17 +128,17 @@ class Server{
 };
 
 
-class Conf
+class Config
 {
     private:
         std::vector<Server> _Servers;
         std::string _FilePath;
         std::ifstream _Configfile;
     public:
-        Conf();
-        Conf(std::string FilePath);
-        ~Conf();
-        void parse_conf();
+        Config();
+        Config(std::string FilePath);
+        ~Config();
+        void parse_config();
 };
 
 #endif

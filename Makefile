@@ -12,7 +12,7 @@
 
 NAME	= webserv
 CC		= c++
-FLAGS	= -Wall -Werror -Wextra
+FLAGS	=
 SRCS 	= main.cpp  server.cpp 
 
 $(NAME): $(SRCS)

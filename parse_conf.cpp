@@ -1,6 +1,6 @@
 #include "parse_conf.hpp"
 
-Conf::Conf() : _FilePath("conf/default.conf")
+Config::Config() : _FilePath("conf/default.conf")
 {
     this->_Configfile.open(this->_FilePath.c_str());
     if (this->_Configfile.is_open())
@@ -11,7 +11,7 @@ Conf::Conf() : _FilePath("conf/default.conf")
         std::cout << "Unable to open file" << std::endl;
 }
 
-Conf::Conf(std::string FilePath) : _FilePath(FilePath)
+Config::Config(std::string FilePath) : _FilePath(FilePath)
 {
     this->_Configfile.open(this->_FilePath.c_str());
     if (this->_Configfile.is_open())
@@ -22,7 +22,7 @@ Conf::Conf(std::string FilePath) : _FilePath(FilePath)
         std::cout << "Unable to open file" << std::endl;
 }
 
-Conf::~Conf()
+Config::~Config()
 {
 }
 
@@ -213,7 +213,7 @@ void Server::setMime_types(std::vector<std::string> mime_types)
 }
 
 
-void Conf::parse_conf()
+void Config::parse_conf()
 {
     std::string line;
     std::istringstream iss;
