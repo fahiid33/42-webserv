@@ -11,8 +11,9 @@ std::map<std::string, std::string> getMime_types(void)
         std::istringstream iss(line);
         std::string extension;
         std::string contentType;
-        if (iss >> extension >> contentType) {
-            mimeTypes[extension] = contentType;
+        char a;
+        if (iss >> contentType >> a >> extension) {
+            mimeTypes[extension] = contentType;\
         }
     }
 
@@ -23,7 +24,7 @@ std::string getContentType(const std::string& fileName, const std::map<std::stri
     size_t dotPos = fileName.find_last_of('.');
     if (dotPos != std::string::npos) {
         std::string extension = fileName.substr(dotPos + 1);
-        auto it = mimeTypes.find(extension);
+        const std::map<std::string, std::string>::const_iterator it = mimeTypes.find(extension);
         if (it != mimeTypes.end()) {
             return it->second;
         }
@@ -58,36 +59,41 @@ std::string auto_indexing(const char *dir)
     return resp;
 }
 
-std::string prepare_response(const char *file_name,const char *dir)
+std::pair<std::string, u_long> prepare_response(const char *file_name,const char *dir)
 {
-    std::string resp = "HTTP/1.1 200 OK\nContent-Type: ";
+    std::pair<std::string, u_long> resp ;
     std::map<std::string, std::string> mimeTypes = getMime_types();
     std::string contentType = getContentType(file_name, mimeTypes);
-    resp += contentType;
-    resp += "\nContent-Length:";
+    resp.first = "HTTP/1.1 200 OK\nContent-Type: ";
+    resp.first += contentType;
     std::ifstream file;
-    file.open(file_name);
+    file.open(file_name, std::ios::binary | std::ios::ate);
     if (!file.is_open() || access(dir, R_OK) == -1)
     {
         //check if the file exist
         if (access(file_name, F_OK) == -1)
         {    
-            resp = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
+            resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
+            resp.second = 13;
             return resp;
         }
         std::cout << "dir ="<< dir << std::endl;
         //check if the file has read permission
         if (access(file_name, R_OK) == -1 || access(dir, R_OK) == -1)
         {
-            resp = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 15\n\n403 forbidden";
+            resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 15\n\n403 forbidden";
+            resp.second = 15;
             return resp;
         }
     }
     std::string str;
-    std::getline(file, str, '\0');
-    resp += std::to_string(str.length());
-    resp += "\n\n";
-    resp += str;
+    resp.first += "\nContent-Length:";
+    resp.second = file.tellg();
+    file.seekg(0, std::ios::beg);
+    resp.first += std::to_string(resp.second);
+    resp.first += "\n\n";
+    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    resp.first += content;
     return resp;
 }
 void    create_socket()
@@ -97,6 +103,7 @@ void    create_socket()
     int addrlen = sizeof(address);
     std::istringstream iss;
     std::string hello;
+    std::pair<std::string, u_long> resp;
     
     
     // Creating socket file descriptor
@@ -134,7 +141,6 @@ void    create_socket()
         
         char buffer[30000] = {0};
         read( new_socket , buffer, 30000);
-        printf("-------------------From client---------------------------\n");
         printf("%s\n",buffer );
         std::string str(buffer);
         std::string skip;
@@ -155,18 +161,16 @@ void    create_socket()
         else
         {
             if (hello == "/")
-                hello = prepare_response("index.html", hello.substr(1,(hello.find_last_not_of('/'))).c_str());
+                resp = prepare_response("index.html", hello.substr(1,(hello.find_last_not_of('/'))).c_str());
             else
             {
                 hello = hello.substr(1, hello.length() - 1);
-                hello = prepare_response(hello.c_str(), hello.substr(0,(hello.find_last_of('/'))).c_str());
+                resp = prepare_response(hello.c_str(), hello.substr(0,(hello.find_last_of('/'))).c_str());
             }
         }
         iss.clear();
-        printf("-------------------From you---------------------------\n");
-        // std::getline(std::cin, hello);
-        write(new_socket , hello.c_str() , strlen(hello.c_str()));
-        printf("--------------------------------------------\n");
+        // std::cout << "resp.first= " << resp.first << std::endl;
+        write(new_socket , resp.first.c_str() , resp.second);
         close(new_socket);
     }
 }

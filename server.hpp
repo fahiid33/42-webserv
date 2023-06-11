@@ -10,7 +10,8 @@
 #include <sys/types.h>
 #include <map>
 
-#define PORT 1115
+#define PORT 1117
 
+std::string getContentType(const std::string &fileName, const std::map<std::string, std::string> &mimeTypes);
 
-void    create_socket();
+void create_socket();
