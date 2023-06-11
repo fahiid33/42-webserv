@@ -1,8 +1,9 @@
 #include "parse_conf.hpp"
+#include "server.hpp"
 
+#define PORT 1111
 int main()
 {
-    Conf conf;
-    conf.parse_conf();
+   create_socket();
     return 0;
 }

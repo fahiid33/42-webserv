@@ -1,13 +1,6 @@
 #include <stdio.h>
 #include <sys/socket.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <iostream>
-#include <fstream>      // std::ifstream
-#include <sstream>      // std::istringstream
-#include <dirent.h>
+#include "server.hpp"
 
 
 std::string auto_indexing(const char *dir)
@@ -64,11 +57,9 @@ std::string prepare_response(const char *file_name,const char *dir)
     resp += str;
     return resp;
 }
-
-#define PORT 1111
-int main()
+void    create_socket()
 {
-    int server_fd, new_socket; long valread;
+     int server_fd, new_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
     std::istringstream iss;
@@ -109,7 +100,7 @@ int main()
         }
         
         char buffer[30000] = {0};
-        valread = read( new_socket , buffer, 30000);
+        read( new_socket , buffer, 30000);
         printf("-------------------From client---------------------------\n");
         printf("%s\n",buffer );
         std::string str(buffer);
@@ -145,5 +136,4 @@ int main()
         printf("--------------------------------------------\n");
         close(new_socket);
     }
-    return 0;
 }
