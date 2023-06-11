@@ -171,6 +171,7 @@ void    create_socket()
         iss.clear();
         // std::cout << "resp.first= " << resp.first << std::endl;
         write(new_socket , resp.first.c_str() , resp.second);
+        
         close(new_socket);
     }
 }

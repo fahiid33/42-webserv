@@ -5,6 +5,7 @@ int main(int ac, char **av)
 {
     (void)av;
     // Config conf;
+    signal(SIGPIPE, SIG_IGN);
     if (ac != 2 && ac != 1)
     {
         std::cout << "Usage: ./webserv <config_file>" << std::endl;
