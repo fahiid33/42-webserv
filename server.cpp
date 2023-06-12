@@ -207,7 +207,7 @@ void    create_socket()
                     resp.second = 0;
                     while(1)
                     {
-                           { bzero(buffer, 30000);
+                            bzero(buffer, 30000);
                             rc = read(i, buffer, 30000);
                             if (rc < 0)
                             {
@@ -246,41 +246,40 @@ void    create_socket()
                                     resp = prepare_response(hello.c_str(), hello.substr(0,(hello.find_last_of('/'))).c_str());
                                 }
                             }
-                            iss.clear();}
+                            iss.clear();
                             // std::cout << "resp.first= " << resp.first << std::endl;
                             while (1)
                             {
-
-                            rc = write(i , resp.first.c_str() + ff , 1024);
-                            ff += rc;
-                            if (rc == -1)
-                            {
-                                std::cout << "t9ra kaml 1 salina = " << ff << std::endl;
-                                FD_CLR(i, &write_fds);
-                                FD_SET(i, &working_set);
-                            }
-                            else if (ff >= resp.second)
-                            {
-                                std::cout << "t9ra kaml n salina = " << ff << std::endl;
-                                FD_CLR(i, &write_fds);
-                                FD_SET(i, &working_set);
-                                break;
-                            }
-                            else
-                            {
-                                std::cout << "t9ra msh kaml = " << ff << std::endl;
-                            }
-                            // std::cout << "resp.second= " << resp.first.c_str() << std::endl;
-                            if (rc < 0)
-                            {
-                                perror("  write() failed");
-                                close_conn = 1;
-                                break;
-                            }
-                            if (ff < resp.second)
-                            {
-                                std::cout << rc << "  " << resp.second << std::endl;
-                            }
+                                rc = write(i , resp.first.c_str() + ff , 1024);
+                                ff += rc;
+                                if (rc == -1)
+                                {
+                                    std::cout << "t9ra kaml 1 salina = " << ff << std::endl;
+                                    FD_CLR(i, &write_fds);
+                                    FD_SET(i, &working_set);
+                                }
+                                else if (ff >= resp.second)
+                                {
+                                    std::cout << "t9ra kaml n salina = " << ff << std::endl;
+                                    FD_CLR(i, &write_fds);
+                                    FD_SET(i, &working_set);
+                                    break;
+                                }
+                                else
+                                {
+                                    std::cout << "t9ra msh kaml = " << ff << std::endl;
+                                }
+                                // std::cout << "resp.second= " << resp.first.c_str() << std::endl;
+                                if (rc < 0)
+                                {
+                                    perror("  write() failed");
+                                    close_conn = 1;
+                                    break;
+                                }
+                                if (ff < resp.second)
+                                {
+                                    std::cout << rc << "  " << resp.second << std::endl;
+                                }
                             }
                     }
                     if (close_conn)
