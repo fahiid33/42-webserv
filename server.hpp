@@ -9,8 +9,11 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <map>
+#include <signal.h>
+#include <sys/socket.h>
+#include <fcntl.h>
 
-#define PORT 1117
+#define PORT 1112
 
 std::string getContentType(const std::string &fileName, const std::map<std::string, std::string> &mimeTypes);
 

@@ -96,23 +96,41 @@ std::pair<std::string, u_long> prepare_response(const char *file_name,const char
     resp.first += content;
     return resp;
 }
+
+
+
 void    create_socket()
 {
-    int server_fd, new_socket;
+    int server_fd, new_socket, max_sd;
     struct sockaddr_in address;
+    int    desc_ready, end_server = 0;
     int addrlen = sizeof(address);
     std::istringstream iss;
     std::string hello;
+    int close_conn = 0;
     std::pair<std::string, u_long> resp;
-    
-    
+    fd_set master_set, working_set;
+    int rc, on = 1;
+
+   
     // Creating socket file descriptor
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     {
         perror("In socket");
         exit(EXIT_FAILURE);
     }
-    
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) < 0)
+    {
+        perror("In setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    rc = fcntl(server_fd, F_SETFL, O_NONBLOCK);
+    if (rc < 0)
+    {
+        perror("In fcntl");
+        exit(EXIT_FAILURE);
+    }
 
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
@@ -125,53 +143,144 @@ void    create_socket()
         perror("In bind");
         exit(EXIT_FAILURE);
     }
-    if (listen(server_fd, 10) < 0)
+    if (listen(server_fd, MAXNAMLEN) < 0)
     {
         perror("In listen");
         exit(EXIT_FAILURE);
     }
-    while(1)
+    FD_ZERO(&master_set);
+    max_sd = server_fd;
+    FD_SET(server_fd, &master_set);
+    std::cout << "server_fd = " << server_fd << std::endl;
+    while(!end_server)
     {
-        printf("\n+++++++ Waiting for new connection ++++++++\n\n");
-        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)
+        // copy master_set to working_set. to avoid changing master_set while using select
+        memcpy(&working_set, &master_set, sizeof(master_set));
+        // wait for an activity on one of the sockets , timeout is NULL , so wait indefinitely
+        rc = select(max_sd + 1, &working_set, NULL, NULL, NULL);
+        if (rc < 0)
         {
-            perror("In accept");
+            perror("In select");
             exit(EXIT_FAILURE);
         }
-        
-        char buffer[30000] = {0};
-        read( new_socket , buffer, 30000);
-        printf("%s\n",buffer );
-        std::string str(buffer);
-        std::string skip;
-        iss.str(str);
-        iss >> skip;
-        iss >> hello;
-        std::cout << "hello= " << hello << std::endl;
-        if (hello.cend()[-1] == '/')
+        // one or more descriptors are readable
+        desc_ready = rc;
+        for (int i = 0; i <= max_sd && desc_ready > 0; i++)
         {
-            if (hello == "/")
-                hello = auto_indexing("./");
-            else
+            if (FD_ISSET(i, &working_set))
             {
-                hello = hello.substr(1, hello.length() - 2);
-                hello = auto_indexing(hello.c_str());
+                desc_ready -= 1;
+                if (i == server_fd)
+                {
+                    std::cout << "listening socket " << i << " is readable" <<  std::endl;
+                    do{
+                        printf("\n+++++++ Waiting for new connection ++++++++\n\n");
+                        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)
+                        {
+
+                            if (errno != EWOULDBLOCK)
+                            {
+                                perror("  accept() failed");
+                                end_server = 1;
+                            }
+                            break;
+                        }
+                        std::cout << "new_socket = " << new_socket << std::endl;
+                        FD_SET(new_socket, &master_set);
+                        if (new_socket > max_sd)
+                            max_sd = new_socket;
+                    }while (new_socket != -1);
+                }
+                else
+                {
+                    char buffer[30000];
+
+                    std::cout << "descriptor " << i << " is readable" <<  std::endl;
+                    close_conn = 0;
+                    int ff = 0;
+                    while(1)
+                    {
+                        bzero(buffer, 30000);
+                        rc = read(i, buffer, 30000);
+                        if (rc < 0)
+                        {
+                            perror("  read() failed");
+                            close_conn = 1;
+                            break;
+                        }
+                        if (rc == 0)
+                        {
+                            std::cout << "  Connection closed" << std::endl;
+                            close_conn = 1;
+                            break;
+                        }
+                        std::string str(buffer);
+                        std::string skip;
+                        iss.str(str);
+                        iss >> skip;
+                        iss >> hello;
+                        std::cout << "hello= " << hello << std::endl;
+                        if (hello.cend()[-1] == '/')
+                        {
+                            if (hello == "/")
+                                hello = auto_indexing("./");
+                            else
+                            {
+                                hello = hello.substr(1, hello.length() - 2);
+                                hello = auto_indexing(hello.c_str());
+                            }
+                        }
+                        else
+                        {
+                            if (hello == "/")
+                                resp = prepare_response("index.html", hello.substr(1,(hello.find_last_not_of('/'))).c_str());
+                            else
+                            {
+                                hello = hello.substr(1, hello.length() - 1);
+                                resp = prepare_response(hello.c_str(), hello.substr(0,(hello.find_last_of('/'))).c_str());
+                            }
+                        }
+                        iss.clear();
+                        // std::cout << "resp.first= " << resp.first << std::endl;
+                        if (resp.second >= ff)
+                        {
+                            rc = write(i , resp.first.c_str() + ff , 1024);
+                            ff += rc;
+                        }
+                        else
+                        {
+                            write(i , resp.first.c_str() + ff ,resp.second - ff);
+                        }
+                        // std::cout << "resp.second= " << resp.first.c_str() << std::endl;
+                        if (rc < 0)
+                        {
+                            perror("  write() failed");
+                            close_conn = 1;
+                            break;
+                        }
+                        if (ff < resp.second)
+                        {
+                            std::cout << rc << "  " << resp.second << std::endl;
+                        }
+                        if (close_conn)
+                        {
+                            close(i);
+                            FD_CLR(i, &master_set);
+                            if (i == max_sd)
+                            {
+                                while (FD_ISSET(max_sd, &master_set) == 0)
+                                    max_sd -= 1;
+                            }
+                        }
+                    }
+                }
             }
+
         }
-        else
-        {
-            if (hello == "/")
-                resp = prepare_response("index.html", hello.substr(1,(hello.find_last_not_of('/'))).c_str());
-            else
-            {
-                hello = hello.substr(1, hello.length() - 1);
-                resp = prepare_response(hello.c_str(), hello.substr(0,(hello.find_last_of('/'))).c_str());
-            }
-        }
-        iss.clear();
-        // std::cout << "resp.first= " << resp.first << std::endl;
-        write(new_socket , resp.first.c_str() , resp.second);
-        
-        close(new_socket);
+    }
+    for (int i=0; i <= max_sd; ++i)
+    {
+        if (FD_ISSET(i, &master_set))
+            close(i);
     }
 }
