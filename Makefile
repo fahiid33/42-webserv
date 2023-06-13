@@ -13,7 +13,7 @@
 NAME	= webserv
 CC		= c++
 FLAGS	=
-SRCS 	= main.cpp  parse_conf.cpp  	server.cpp
+SRCS 	= main.cpp  parse_conf.cpp  server.cpp
 
 $(NAME): $(SRCS)
 	$(CC) $(FLAGS) $(SRCS) -o $(NAME)
