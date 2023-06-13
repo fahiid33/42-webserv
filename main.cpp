@@ -1,4 +1,4 @@
-#include "parse_conf.hpp"
+// #include "parse_conf.hpp"
 #include "server.hpp"
 
 
@@ -14,8 +14,8 @@ int main(int ac, char **av)
     }
     else if (ac == 2)
     {
-        Config conf(av[1]);
-        conf.parse_config();
+        // Config conf(av[1]);
+        // conf.parse_config();
         // for (size_t i = 0; i < conf.getServers().size(); i++)
         // {
         //     std::cout << "++++++++++++++++++++++++++" "server " << i << " : ++++++++++++++++++++++++++"  << std::endl;
@@ -25,8 +25,8 @@ int main(int ac, char **av)
     }
     else if (ac == 1)
     {
-        Config conf("conf/config.conf");
-        conf.parse_config();
+        // Config conf("conf/default.conf");
+        // conf.parse_config();
         // for (size_t i = 0; i < conf.getServers().size(); i++)
         // {
         //     std::cout << "++++++++++++++++++++++++++" "server " << i << " : ++++++++++++++++++++++++++"  << std::endl;

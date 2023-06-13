@@ -9,9 +9,11 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <map>
+#include <vector>
 #include <signal.h>
 #include <sys/socket.h>
 #include <fcntl.h>
+#include "socket.hpp"
 
 #define PORT 1112
 

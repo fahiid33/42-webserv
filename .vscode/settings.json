@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.c": "c",
         "__bit_reference": "cpp",
         "__config": "cpp",
         "__debug": "cpp",
@@ -67,6 +68,11 @@
         "filesystem": "cpp",
         "map": "cpp",
         "__tree": "cpp",
-        "__memory": "cpp"
+        "__memory": "cpp",
+        "*.tcc": "cpp",
+        "clocale": "cpp",
+        "memory_resource": "cpp",
+        "numeric": "cpp",
+        "random": "cpp"
     }
 }
