@@ -12,8 +12,8 @@
 
 NAME	= webserv
 CC		= c++
-FLAGS	=
-SRCS 	= main.cpp  parse_conf.cpp  server.cpp
+FLAGS	= 
+SRCS 	= main.cpp Socket.cpp Response.cpp MultiPlexing.cpp server.cpp Request.cpp
 
 $(NAME): $(SRCS)
 	$(CC) $(FLAGS) $(SRCS) -o $(NAME)

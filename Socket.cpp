@@ -1,15 +1,48 @@
-#include "request.hpp"
+#include "Socket.hpp"
 
 Socket::Socket()
 {
-    _sockaddr.sin_family = AF_INET;
-    _sockaddr.sin_addr.s_addr = INADDR_ANY;
-    _sockaddr.sin_port = htons(PORT);
-    addrlen = sizeof(_sockaddr);
+    
+}
+
+Socket::Socket(int s_fd, sockaddr_in address)
+{
+    this->s_fd = s_fd;
+    this->address = address;
 }
 
 Socket::~Socket()
 {
+}
+
+void Socket::setClose_conn(const int &close_conn)
+{
+    this->close_conn = close_conn;
+}
+
+void Socket::setResp(Response &resp)
+{
+    this->resp = resp;
+}
+
+void Socket::setReq(Request &req)
+{
+    this->req = req;
+}
+
+Response &Socket::get_Resp()
+{
+    return resp;
+}
+
+Request &Socket::getReq()
+{
+    return req;
+}
+
+int Socket::getClose_conn()
+{
+    return close_conn;
 }
 
 int Socket::getSocket_fd()
@@ -17,53 +50,54 @@ int Socket::getSocket_fd()
     return s_fd;
 }
 
-struct sockaddr_in  & Socket::getSockaddr()
+sockaddr_in Socket::getAddress()
 {
+    return address;
+}
+
+struct sockaddr_in   Socket::init_Sockadd()
+{
+    struct sockaddr_in  _sockaddr;
+    _sockaddr.sin_family = AF_INET;
+    _sockaddr.sin_addr.s_addr = INADDR_ANY;
+    _sockaddr.sin_port = htons(PORT);
     return _sockaddr;
 }
 
-void Socket::setSocket_fd(int socket_fd)
+void Socket::setSocket_fd(int &socket_fd)
 {
     s_fd = socket_fd;
 }
 
-void Socket::setSockaddr(struct sockaddr_in  &sockaddr)
+void    Socket::create_sockets(void)
 {
-    _sockaddr = sockaddr;
-}
-
-void    create_socket(void)
-{
-    Socket sock;
-    int server_fd, new_socket;
-    struct sockaddr_in address = sock.getSockaddr();
+    address = this->init_Sockadd();
     int     on;
 
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+    if ((s_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     {
         perror("In socket");
         exit(EXIT_FAILURE);
     }
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) < 0)
+    if (setsockopt(s_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) < 0)
     {
         perror("In setsockopt");
         exit(EXIT_FAILURE);
     }
-    if (fcntl(server_fd, F_SETFL, O_NONBLOCK) < 0)
+    if (fcntl(s_fd, F_SETFL, O_NONBLOCK) < 0)
     {
         perror("In fcntl");
         exit(EXIT_FAILURE);
     }
     memset(address.sin_zero, '\0', sizeof address.sin_zero);
-    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0) 
+    if (bind(s_fd, (struct sockaddr *)&address, sizeof(address))<0) 
     {
         perror("In bind");
         exit(EXIT_FAILURE);
     }
-    if (listen(server_fd, 10) < 0) 
+    if (listen(s_fd, MAXNAMLEN) < 0) 
     {
         perror("In listen");
         exit(EXIT_FAILURE);
     }
-    sock.setSocket_fd(server_fd);
 }
