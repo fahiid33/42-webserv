@@ -13,7 +13,7 @@
 NAME	= webserv
 CC		= c++
 FLAGS	= 
-SRCS 	= main.cpp Socket.cpp Response.cpp MultiPlexing.cpp server.cpp Request.cpp
+SRCS 	= main.cpp srcs/MultiPlexing.cpp srcs/request.cpp srcs/response.cpp srcs/server.cpp srcs/Socket.cpp
 
 $(NAME): $(SRCS)
 	$(CC) $(FLAGS) $(SRCS) -o $(NAME)
@@ -25,5 +25,7 @@ clean:
 
 fclean: clean
 	@rm -rf $(NAME)
+	@rm -rf *.dSYM
 
 re: fclean all
+	@rm -rf *.dSYM
