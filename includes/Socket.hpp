@@ -29,22 +29,22 @@ class Socket{
         Socket();
         Socket(int s_fd, struct sockaddr_in address);
         ~Socket();
-        void setClose_conn(const int &close_conn);
+        
+        Socket & operator=(const Socket &sock);
+        
         Response &get_Resp();
         Request &getReq();
         int getClose_conn();
         int getSocket_fd();
+        
         struct sockaddr_in getAddress();
         struct sockaddr_in   init_Sockadd();
+        
+        void setClose_conn(const int &close_conn);
         void setSocket_fd(int &socket_fd);
         void setResp(Response &resp);
         void setReq(Request &req);
         void create_sockets();
-        Socket & operator=(const Socket &sock){
-            this->s_fd = sock.s_fd;
-            this->address = sock.address;
-            return *this;
-        };
 };
 
 

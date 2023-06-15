@@ -26,7 +26,6 @@ class Response
     void setResp(const std::pair<std::string, u_long> &resp);
     std::string getContentType(const std::string& file , std::map<std::string, std::string>& mime_t);
     std::map<std::string, std::string> mime_types_init();
-    // void setContentType(std::string &content_type);
     std::string auto_indexing(const char *path);
 };
 

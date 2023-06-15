@@ -16,6 +16,13 @@ Socket::~Socket()
 {
 }
 
+Socket & Socket::operator=(const Socket &sock)
+{
+    this->s_fd = sock.s_fd;
+    this->address = sock.address;
+    return *this;
+}
+
 void Socket::setClose_conn(const int &close_conn)
 {
     this->close_conn = close_conn;
@@ -85,11 +92,6 @@ void    Socket::create_sockets(void)
         perror("In setsockopt");
         exit(EXIT_FAILURE);
     }
-    // if (fcntl(s_fd, F_SETFL, O_NONBLOCK) < 0)
-    // {
-    //     perror("In fcntl");
-    //     exit(EXIT_FAILURE);
-    // }
     memset(address.sin_zero, '\0', sizeof address.sin_zero);
     if (bind(s_fd, (struct sockaddr *)&address, sizeof(address))<0) 
     {

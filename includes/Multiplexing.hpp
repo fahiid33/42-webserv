@@ -19,13 +19,6 @@ public:
     MultiPlexing();
     ~MultiPlexing();
 
-    // void setMasterSet(fd_set& set);
-    // fd_set& getMasterSet();
-    // void setMaxSd(int sd);
-    // int getMaxSd();
-    // void setServerFd(int fd);
-    // int getServerFd();
-
     void setup_server();
     void handleNewConnection(Server &server, std::vector<Socket> &Sock);
     void handleReadData(Socket &pdo);

@@ -4,8 +4,8 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <iostream>
-#include <fstream>      // std::ifstream
-#include <sstream>      // std::istringstream
+#include <fstream>
+#include <sstream>
 #include <dirent.h>
 
 class Request {
