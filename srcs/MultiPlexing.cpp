@@ -171,20 +171,20 @@ void MultiPlexing::handleReadData(Socket &Sock)
     std::istringstream iss;
     std::string hello;
 
-        bzero(buffer, 30000);
+    bzero(buffer, 30000);
         
         if ((rc = read(Sock.getSocket_fd(), buffer, sizeof(buffer))) < 0) 
         {
             perror("  read() failed");
             Sock.setClose_conn(1);
-            // break;
+            return ;
         }
         
         if (rc == 0) 
         {
             std::cout << "  Connection closed" << std::endl;
             Sock.setClose_conn(1);
-            // break;
+            return ;
         }
         
         std::string str(buffer);
@@ -223,29 +223,24 @@ void MultiPlexing::handleWriteData(Socket &sock)
     // Get the appropriate response data to send back to the client
     // std::cout << "offset = " << sock.get_Resp().getOffset() << sock.get_Resp().getResp().first << std::endl;
     int rc = write(sock.getSocket_fd() , sock.get_Resp().getResp().first.c_str() + sock.get_Resp().getOffset(), 1024);
-    std::cout << "offset = " << sock.get_Resp().getOffset() << std::endl;
+    // std::cout << "offset = " << sock.get_Resp().getOffset() << std::endl;
     sock.get_Resp().setOffset(sock.get_Resp().getOffset() + rc);
-    if (rc == -1)
-    {
-        // std::cout << "t9ra kaml 1 salina = " << sock.get_Resp().getOffset() << std::endl;
-        sock.get_Resp().setOffset(-1);
-        sock.setClose_conn(1);
-    }
-    else if (sock.get_Resp().getOffset() >= sock.get_Resp().getResp().second)
+    if (sock.get_Resp().getOffset() >= sock.get_Resp().getResp().second)
     {
         // std::cout << "t9ra kaml n salina = " << sock.get_Resp().getOffset() << std::endl;
-        sock.get_Resp().setOffset(-1);
+        sock.get_Resp().setOffset(0);
         sock.setClose_conn(1);
+        return ;
     }
-    else
-    {
-        std::cout << "t9ra msh kaml = " << sock.get_Resp().getOffset() << std::endl;
-    }
-    // std::cout << "sock.get_Resp().getResp().second= " << resp.first.c_str() << std::endl;
     if (rc < 0)
     {
         perror("  write() failed");
         sock.setClose_conn(1);
+        return ;
+    }
+    else
+    {
+        // std::cout << "t9ra msh kaml = " << sock.get_Resp().getOffset() << std::endl;
     }
     if (sock.get_Resp().getOffset() < sock.get_Resp().getResp().second)
     {
@@ -254,13 +249,13 @@ void MultiPlexing::handleWriteData(Socket &sock)
 }
 
 
-void    MultiPlexing::handleNewConnection(Server & server, std::queue<Socket> &Sock)
+void    MultiPlexing::handleNewConnection(Server & server, std::vector<Socket> &Sock)
 {
     int new_socket;
     struct sockaddr_in address = server.getServerSocket().getAddress();
     int addrlen = sizeof(address);
-    do
-    {
+    // do
+    // {
         printf("\n+++++++ Waiting for new connection ++++++++\n\n");
         if ((new_socket = accept(server.getServerFd(), (struct sockaddr *)& address, (socklen_t*)&addrlen))<0)
         {
@@ -269,9 +264,10 @@ void    MultiPlexing::handleNewConnection(Server & server, std::queue<Socket> &S
                 perror("  accept() failed");
                 server.setEndServer(1);
             }
-            break;
+            // break;
         }
-        if ((fcntl(server.getServerFd(), F_SETFL, O_NONBLOCK)) <  0)
+        std::cout << "Connection accepted" << std::endl;
+        if ((fcntl(new_socket, F_SETFL, O_NONBLOCK)) <  0)
         {
             perror("In fcntl");
             exit(EXIT_FAILURE);
@@ -283,9 +279,7 @@ void    MultiPlexing::handleNewConnection(Server & server, std::queue<Socket> &S
         FD_SET(new_socket, &server.getMasterSet());
         if (new_socket > server.getMaxSd())
             server.setMaxSd(new_socket);
-        Sock.push(Socket(new_socket, address));
-    }
-    while (new_socket != -1);
+        Sock.push_back(Socket(new_socket, address));
 }
 
 void MultiPlexing::setup_server() 
@@ -293,49 +287,77 @@ void MultiPlexing::setup_server()
     Socket sock;
     int new_socket;
     int desc_ready, close_conn = 0;
-    std::queue<Socket> clian;
+    std::vector<Socket> clian;
     int rc;
     Server server;
+    fd_set read_cpy, write_cpy;
     sock.create_sockets();
     server.setServerSocket(sock);
     server.setMaxSd(server.getServerFd());
     server.setMasterSet(server.getServerFd());
+    struct timeval timeout;
+    timeout.tv_sec = 3;
+    timeout.tv_usec = 0;
     
     while (!server.getEndServer())
     {
         memcpy(&server.getWorkingSet(), &server.getMasterSet(), sizeof(server.getMasterSet()));
-        
-        if ((rc = select(server.getMaxSd() + 1, &server.getWorkingSet(), &server.getWriteFds(), NULL, NULL)) < 0) {
+        memcpy(&write_cpy, &server.getWriteFds(), sizeof(server.getWriteFds()));
+        if ((rc = select(server.getMaxSd() + 1, &server.getWorkingSet(), &write_cpy, NULL, &timeout)) < 0) {
             perror("select() failed");
             exit(EXIT_FAILURE);
         }
-        desc_ready = rc;
-        for (int i = 0; i <= server.getMaxSd() && desc_ready > 0; i++) {
-            if (FD_ISSET(i, &server.getWorkingSet())) 
+        if (rc == 0)
+        {
+            printf("select() timed out.  End program.\n");
+        }
+        if (FD_ISSET(server.getServerFd(), &server.getWorkingSet()))
+        {
+            handleNewConnection(server, clian);
+        }
+        for (int i = 0; i < clian.size(); i++)
+        {
+            if (FD_ISSET(clian[i].getSocket_fd(), &server.getWorkingSet()))
             {
-                desc_ready -= 1;
-                if (i == server.getServerFd()) 
-                        handleNewConnection(server, clian);
+                handleReadData(clian[i]);
+                if (clian[i].getClose_conn())
+                {
+                    FD_CLR(clian[i].getSocket_fd(), &server.getMasterSet());
+                    close(clian[i].getSocket_fd());
+                    clian.erase(clian.begin() + i);
+                }
                 else
                 {
-                    handleReadData(clian.front());
-                    FD_SET(clian.front().getSocket_fd(), &server.getWriteFds());
-                }
-                if (FD_ISSET(clian.front().getSocket_fd(), &server.getWriteFds())) 
-                {
-                    handleWriteData(clian.front());
-                    if (clian.front().get_Resp().getOffset() < 0)
-                    {
-                        FD_CLR(clian.front().getSocket_fd(), &server.getWriteFds());
-                        clian.pop();
-                    }
+                    FD_SET(clian[i].getSocket_fd(), &server.getWriteFds());
+                    FD_CLR(clian[i].getSocket_fd(), &server.getMasterSet());
                 }
             }
         }
+        for (int i = 0; i < clian.size(); i++)
+        {
+            if (FD_ISSET(clian[i].getSocket_fd(), &write_cpy)) 
+            {
+                handleWriteData(clian[i]);
+                if (clian[i].getClose_conn())
+                {
+                    FD_CLR(clian[i].getSocket_fd(), &server.getWriteFds());
+                    close(clian[i].getSocket_fd());
+                    clian.erase(clian.begin() + i);
+                }
+                else if (clian[i].get_Resp().getOffset() == 0)
+                {
+                    std::cout << "offsetttt = " << std::endl;
+                    FD_CLR(clian[i].getSocket_fd(), &server.getWriteFds());
+                    close(clian[i].getSocket_fd());
+                    clian.erase(clian.begin() + i);
+                }
+            }
+        }
+
     }
+}
     
     // for (int i = 0; i <= max_sd; ++i) {
     //     if (FD_ISSET(i, &master_set))
     //         close(i);
     // }
-}

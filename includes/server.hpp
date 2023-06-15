@@ -170,3 +170,113 @@ class Server
 //             close(i);
 //     }
 // }
+
+// while (1)
+//     {
+//         readcpy = io.fdread;
+//         writecpy = io.fdwrite;
+//         int r = select(io._fdmax + 1, &readcpy, &writecpy, NULL, &vl);
+//         if (r == 0)
+//             continue;
+//         else
+//         {
+//             for (size_t j = 0; j < servers.size(); j++)
+//             {
+//                 int fdserver = servers[j].getSocket().getSocketFd();
+//                 if (FD_ISSET(fdserver, &readcpy))
+//                 {
+//                     Client newC;
+//                     sockaddr_in client_addr;
+//                     socklen_t client_addr_size = sizeof(client_addr);
+//                     if ((fd_client = accept(fdserver, (sockaddr *)&client_addr,&client_addr_size)) != -1)
+//                     {
+//                         fcntl(fd_client, F_SETFL, O_NONBLOCK);
+//                         newC.setSocketFd(fd_client);
+//                         newC.setServer(servers[j]);
+//                         ClientRequest.push_back(std::pair<Client, Request>(newC, Request()));
+//                         std::cout << MAGENTA << "New client "<< inet_ntoa(client_addr.sin_addr) << ":" << servers[j].getPort() << " connected" << RESET << std::endl;
+//                         io.setFdRead(fd_client);
+//                         if (fd_client > io._fdmax)
+//                             io._fdmax = fd_client;
+//                     }
+//                 }
+//             }
+//             for (u_int i = 0; i < ClientRequest.size(); i++)
+//             {
+//                 if (FD_ISSET(ClientRequest[i].first.getSocketFd(), &readcpy)) // request
+//                 {
+//                     char request[10002];
+//                     int r = recv(ClientRequest[i].first.getSocketFd(), request, 10000, 0); 
+//                     if (r == -1)
+//                     {
+//                         FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
+//                         close(ClientRequest[i].first.getSocketFd());
+//                         ClientRequest.erase(ClientRequest.begin() + i);
+//                     }
+//                     else if (r == 0)
+//                     {
+//                         FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
+//                         close(ClientRequest[i].first.getSocketFd());
+//                         ClientRequest.erase(ClientRequest.begin() + i);
+//                     }
+//                     else
+//                     {
+//                          if (ClientRequest[i].second.get_ok() == 0)
+//                             ClientRequest[i].second = Request();
+//                         ClientRequest[i].second.setLength(r);
+//                         ClientRequest[i].second.handle_request(request);
+//                          if (ClientRequest[i].second.getFinished() == 1)
+//                         {
+//                             std::cout << BLUE << "Request "<< trim(ClientRequest[i].second.Getrequest()["Method"]) <<
+//                             " " << trim(ClientRequest[i].second.Getrequest()["Path"]) << " " <<
+//                             trim(ClientRequest[i].second.Getrequest()["Version"]) << RESET << std::endl;
+
+//                             bool found = 0;
+//                             Response resp;
+//                             FD_CLR(ClientRequest[i].first.getSocketFd(), &io.fdread);
+//                             FD_SET(ClientRequest[i].first.getSocketFd(), &io.fdwrite);
+//                             for (size_t j = 0; j < servers.size(); j++)
+//                             {
+//                                 for (size_t k = 0; k < servers[j].getServerNames().size(); k++)
+//                                 {
+//                                     if (servers[j].getServerNames()[k] == strtrim(ClientRequest[i].second.Getrequest().at("Host")))
+//                                     {
+//                                         resp = Response(ClientRequest[i].second, servers[j], ClientRequest[i].first.getSocketFd());
+//                                         ReadyResponse.push_back(resp);
+//                                         found = 1;
+//                                         break;
+//                                     }
+//                                 }
+//                             }
+//                             if (!found)
+//                             {
+//                                 for (size_t j = 0; j < servers.size(); j++)
+//                                 {
+//                                     if (!servers[j].getServerNames().size() && servers[j].getPort() == ClientRequest[i].first.getServer().getPort())
+//                                     {
+//                                         resp = Response(ClientRequest[i].second, servers[j], ClientRequest[i].first.getSocketFd());
+//                                         ReadyResponse.push_back(resp);
+//                                         found = 1;
+//                                         break;
+//                                     }
+//                                 }
+//                             }
+//                             if (!found)
+//                             {
+//                                 resp = Response(ClientRequest[i].second, ClientRequest[i].first.getServer(), ClientRequest[i].first.getSocketFd());
+//                                 ReadyResponse.push_back(resp);
+//                             }
+//                         }
+//                     }
+//                 }
+//             }  
+//             for (u_int i = 0; i < ReadyResponse.size(); i++)
+//             {
+//                 if (FD_ISSET(ReadyResponse[i].getClientFD(), &writecpy)) // response
+//                 {
+//                     ReadyResponse[i].handler(io.fdread,io.fdwrite); 
+//                     if (ReadyResponse[i].get_done() == 1)
+//                         ReadyResponse.erase(ReadyResponse.begin() + i);
+//                 }
+                 
+//             }

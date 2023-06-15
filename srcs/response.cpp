@@ -1,12 +1,12 @@
 #include "../includes/response.hpp"
 
-Response::Response() {}
+Response::Response() : _offset(0) {}
 
 Response::~Response() {}
 
 u_long Response::getOffset()
 {
-    return u_long();
+    return _offset;
 }
 
 void Response::setOffset(u_long offset)
@@ -27,7 +27,7 @@ void Response::setResp(const std::pair<std::string, u_long> &resp)
 std::map<std::string, std::string>    Response::mime_types_init()
 {
     std::map<std::string, std::string> mimeTypes;
-    std::ifstream file("../tools/mime.types");
+    std::ifstream file("./tools/mime.types");
     std::string line;
     while (std::getline(file, line)) 
     {
@@ -84,9 +84,21 @@ std::pair<std::string, u_long> prepare_response(const char *file_name,const char
 {
     Response respp;
     std::pair<std::string, u_long> resp ;
+    std::time_t currentTime = std::time(nullptr);
+    std::time_t expirationTime = currentTime + 666666666666;
     std::map<std::string, std::string> mimeTypes = respp.mime_types_init();
     std::string contentType = respp.getContentType(file_name, mimeTypes);
-    resp.first = "HTTP/1.1 200 OK\nContent-Type: ";
+
+
+    std::cout << "contentType = " << contentType << std::endl;
+    std::cout << "file = " << file_name << std::endl;
+    resp.first = "HTTP/1.1 200 OK\nExpires: ";
+    std::ostringstream timeStream;
+    timeStream << std::put_time(std::gmtime(&expirationTime), "%a, %d %b %Y %H:%M:%S GMT");
+    resp.first += timeStream.str();
+
+    resp.first += "\r\n";
+    resp.first += "Content-Type: ";
     resp.first += contentType;
     std::ifstream file;
     file.open(file_name, std::ios::binary | std::ios::ate);

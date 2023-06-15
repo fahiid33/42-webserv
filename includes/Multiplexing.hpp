@@ -3,7 +3,6 @@
 #include <vector>
 #include <sys/select.h>
 #include <sys/time.h>
-#include <queue>
 #include <sys/types.h>
 #include <unistd.h>
 #include <iostream>
@@ -28,7 +27,7 @@ public:
     // int getServerFd();
 
     void setup_server();
-    void handleNewConnection(Server &server, std::queue<Socket> &Sock);
+    void handleNewConnection(Server &server, std::vector<Socket> &Sock);
     void handleReadData(Socket &pdo);
     void handleWriteData(Socket &sock);
 };

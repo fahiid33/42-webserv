@@ -8,6 +8,7 @@ Socket::Socket()
 Socket::Socket(int s_fd, sockaddr_in address)
 {
     this->s_fd = s_fd;
+    this->close_conn = 0;
     this->address = address;
 }
 
@@ -84,11 +85,11 @@ void    Socket::create_sockets(void)
         perror("In setsockopt");
         exit(EXIT_FAILURE);
     }
-    if (fcntl(s_fd, F_SETFL, O_NONBLOCK) < 0)
-    {
-        perror("In fcntl");
-        exit(EXIT_FAILURE);
-    }
+    // if (fcntl(s_fd, F_SETFL, O_NONBLOCK) < 0)
+    // {
+    //     perror("In fcntl");
+    //     exit(EXIT_FAILURE);
+    // }
     memset(address.sin_zero, '\0', sizeof address.sin_zero);
     if (bind(s_fd, (struct sockaddr *)&address, sizeof(address))<0) 
     {
