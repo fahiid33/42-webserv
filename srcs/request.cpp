@@ -2,15 +2,88 @@
 
 Request::Request()
 {
+    this->request = "";
 }
 
 Request::Request(std::string request)
 {
     this->request = request;
+    std::istringstream iss;
+    std::istringstream file;
+    std::string line;
+    file.str(request);
+    std::getline(file, line);
+    iss.str(line);
+    iss >> method >> path >> version;
+    if(iss >> version)
+        throw std::invalid_argument("Invalid request");
+    this->file = path.substr(path.find_last_of('/') + 1, path.length() - 1);
+    this->path = path.substr(0, path.find_last_of('/') + 1);
+    while(std::getline(file, line))
+    {
+        iss.clear();
+        iss.str(line);
+        if (iss >> line)
+        {
+            if (line == "Host:")
+            {
+                iss >> host;
+                if (iss >> host)
+                    throw std::invalid_argument("Invalid request");
+            }
+            if (line == "Connection:")
+            {
+                iss >> conn;
+                if (iss >> conn)
+                    throw std::invalid_argument("Invalid request");
+            }
+            if (line == "Transfer-Encoding:")
+            {
+                iss >> tr_enc;
+                if (iss >> tr_enc)
+                    throw std::invalid_argument("Invalid request");
+            }
+        }
+    }
 }
 
 Request::~Request()
 {
+}
+
+std::string Request::getPath()
+{
+    return this->path;
+}
+
+std::string Request::getMethod()
+{
+    return this->method;
+}
+
+std::string Request::getVersion()
+{
+    return this->version;
+}
+
+std::string Request::getHost()
+{
+    return this->host;
+}
+
+std::string Request::getFile()
+{
+    return this->file;
+}
+
+std::string Request::getConn()
+{
+    return this->conn;
+}
+
+std::string Request::getTr_enc()
+{
+    return this->tr_enc;
 }
 
 std::string Request::getRequest()

@@ -32,12 +32,20 @@ void MultiPlexing::handleReadData(Socket &Sock)
         }
         
         std::string str(buffer);
-
-        std::string skip;
         iss.str(str);
-        iss >> skip;
-        iss >> hello;
+        try
+        {
+            Request req(str);
+            Sock.get_Resp().setResp(prepare_response(req.getFile().c_str(),req.getPath().c_str()));
+            iss.clear();
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+            exit(1);
+        }
         
+
         // if (hello.cend()[-1] == '/') {
         //     if (hello == "/") {
         //         hello = resp.auto_indexing("./");
@@ -47,17 +55,7 @@ void MultiPlexing::handleReadData(Socket &Sock)
         //         hello = resp.auto_indexing(hello.c_str());
         //     }
         // }
-        if (hello == "/") {
-            Sock.get_Resp().getResp() = prepare_response("index.html", hello.substr(1, hello.find_last_not_of('/')).c_str());
-            Sock.get_Resp().setResp(prepare_response("index.html",
-                hello.substr(1, hello.find_last_of('/')).c_str()));
-        }
-        else {
-            hello = hello.substr(1, hello.length() - 1);
-            Sock.get_Resp().setResp(prepare_response(hello.c_str(),
-                hello.substr(0, hello.find_last_of('/')).c_str()));
-        }
-        iss.clear();
+        
 }
 
 
@@ -65,8 +63,19 @@ void MultiPlexing::handleWriteData(Socket &sock)
 {
     //  handling client data writing
     // Get the appropriate response data to send back to the client
-    int rc = write(sock.getSocket_fd() , sock.get_Resp().getResp().first.c_str() + sock.get_Resp().getOffset(), 1024);
-    sock.get_Resp().setOffset(sock.get_Resp().getOffset() + rc);
+    int rc ;
+    if (sock.get_Resp().getResp().second < 1024)
+    {
+        rc = write(sock.getSocket_fd() , sock.get_Resp().getResp().first.c_str(),
+            sock.get_Resp().getResp().second);
+        sock.setClose_conn(1);
+    }
+    else
+    {
+        rc = write(sock.getSocket_fd() , sock.get_Resp().getResp().first.c_str() + sock.get_Resp().getOffset(), 1024);
+        sock.get_Resp().setOffset(sock.get_Resp().getOffset() + rc);
+    }
+    std::cout << "rc = " << rc << std::endl;
     if (sock.get_Resp().getOffset() >= sock.get_Resp().getResp().second)
     {
         sock.get_Resp().setOffset(0);
@@ -139,7 +148,7 @@ void MultiPlexing::setup_server()
         }
         if (rc == 0)
         {
-            printf("select() timed out.  End program.\n");
+            // printf("select() timed out.  End program.\n");
         }
         if (FD_ISSET(server.getServerFd(), &server.getWorkingSet()))
             handleNewConnection(server, clian);

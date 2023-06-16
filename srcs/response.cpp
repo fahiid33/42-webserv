@@ -84,21 +84,10 @@ std::pair<std::string, u_long> prepare_response(const char *file_name,const char
 {
     Response respp;
     std::pair<std::string, u_long> resp ;
-    std::time_t currentTime = std::time(nullptr);
-    std::time_t expirationTime = currentTime + 666666666666;
     std::map<std::string, std::string> mimeTypes = respp.mime_types_init();
     std::string contentType = respp.getContentType(file_name, mimeTypes);
 
-
-    std::cout << "contentType = " << contentType << std::endl;
-    std::cout << "file = " << file_name << std::endl;
-    resp.first = "HTTP/1.1 200 OK\nExpires: ";
-    std::ostringstream timeStream;
-    timeStream << std::put_time(std::gmtime(&expirationTime), "%a, %d %b %Y %H:%M:%S GMT");
-    resp.first += timeStream.str();
-
-    resp.first += "\r\n";
-    resp.first += "Content-Type: ";
+    resp.first = "HTTP/1.1 200 OK\nContent-Type: ";
     resp.first += contentType;
     std::ifstream file;
     file.open(file_name, std::ios::binary | std::ios::ate);
@@ -108,7 +97,7 @@ std::pair<std::string, u_long> prepare_response(const char *file_name,const char
         if (access(file_name, F_OK) == -1)
         {    
             resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
-            resp.second = 13;
+            resp.second = 84;
             return resp;
         }
         std::cout << "dir ="<< dir << std::endl;
@@ -116,7 +105,7 @@ std::pair<std::string, u_long> prepare_response(const char *file_name,const char
         if (access(file_name, R_OK) == -1 || access(dir, R_OK) == -1)
         {
             resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 15\n\n403 forbidden";
-            resp.second = 15;
+            resp.second = 84;
             return resp;
         }
     }
@@ -126,6 +115,7 @@ std::pair<std::string, u_long> prepare_response(const char *file_name,const char
     file.seekg(0, std::ios::beg);
     resp.first += std::to_string(resp.second);
     resp.first += "\n\n";
+    resp.second = resp.second + resp.first.length();
     std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     resp.first += content;
     return resp;

@@ -5,7 +5,7 @@ Server::Server()
     FD_ZERO(&master_set);
     FD_ZERO(&working_set);
     FD_ZERO(&write_fds);
-        
+    end_server = 0;
     max_sd = 0;
 }
 
