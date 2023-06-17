@@ -1,4 +1,5 @@
-#include "../includes/Socket.hpp"
+
+#include "../includes/socket.hpp"
 
 Socket::Socket()
 {

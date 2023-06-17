@@ -1,8 +1,5 @@
 #pragma once
 
-
-#include "server.hpp"
-#include "socket.hpp"
 #include  <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -25,20 +22,25 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
-#include "request.hpp"
-#include "response.hpp"
+#include "server.hpp"
 
 
-class MultiPlexing
+
+class Server;
+
+
+class Config
 {
-    Server server;
-
-public:
-    MultiPlexing();
-    ~MultiPlexing();
-
-    void setup_server();
-    void handleNewConnection(Server &server, std::vector<Socket> &Sock);
-    void handleReadData(Socket &pdo);
-    void handleWriteData(Socket &sock);
+    private:
+        std::vector<Server> _Servers;
+        std::string _FilePath;
+        std::ifstream _Configfile;
+    public:
+        Config();
+        Config(std::string FilePath);
+        ~Config();
+        void parse_config();
+        std::vector<Server> & getServers(){
+            return _Servers;
+        }
 };
