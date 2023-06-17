@@ -5,7 +5,8 @@ MultiPlexing::MultiPlexing()
     // initialize IO
     FD_ZERO(&io.readfds);
     FD_ZERO(&io.writefds);
-    max_sd = 3;
+    FD_ZERO(&io.read_cpy);
+    FD_ZERO(&io.write_cpy);
 }
 
 MultiPlexing::~MultiPlexing()
@@ -30,7 +31,7 @@ void MultiPlexing::handleReadData(Socket &Sock)
     std::string hello;
 
     bzero(buffer, 30000);
-        
+    std::cout << "socket read from it " << Sock.getSocket_fd() << std::endl;
         if ((rc = read(Sock.getSocket_fd(), buffer, sizeof(buffer))) < 0) 
         {
             perror("  read() failed");
@@ -148,15 +149,15 @@ void MultiPlexing::setup_server(std::vector<Server> &servers)
         sock = servers[i].getServerSocket();
         sock.create_sockets(servers[i].getPort());
         servers[i].setServerSocket(sock);
-        servers[i].setMaxSd(servers[i].getServerFd());
-        servers[i].setMasterSet(servers[i].getServerFd());
+        max_sd = servers[i].getServerFd();
+        FD_SET(servers[i].getServerFd(), &io.readfds);
+        std::cout << "port: " << servers[i].getPort() << " " << max_sd << std::endl;
     }
-    struct timeval timeout;
-    timeout.tv_sec = 3;
-    timeout.tv_usec = 0;
-
     while (1)
     {
+        struct timeval timeout;
+        timeout.tv_sec = 3;
+        timeout.tv_usec = 0;
         memcpy(&io.read_cpy, &io.readfds, sizeof(io.readfds));
         memcpy(&io.write_cpy, &io.writefds, sizeof(io.writefds));
         if ((rc = select(max_sd + 1, &io.read_cpy, &io.write_cpy, NULL, &timeout)) < 0) {
@@ -166,57 +167,56 @@ void MultiPlexing::setup_server(std::vector<Server> &servers)
         if (rc == 0)
         {
             printf("select() timed out.  End program.\n");
+            continue;
         }
 
         for (int j = 0; j < servers.size(); j++)
         {
             if (FD_ISSET(servers[j].getServerFd(), &io.read_cpy))
                 handleNewConnection(servers[j], clian);
-            if (servers[j].getEndServer())
+        }
+        // if (servers[j].getEndServer())
+        // {
+        //     close(servers[j].getServerFd());
+        //     servers.erase(servers.begin() + j);
+        // }
+        for (int i = 0; i < clian.size(); i++)
+        {
+            if (FD_ISSET(clian[i].getSocket_fd(), &io.read_cpy))
             {
-                close(servers[j].getServerFd());
-                servers.erase(servers.begin() + j);
-            }
-            std::cout << "7sslat hna" << std::endl;
-            for (int i = 0; i < clian.size(); i++)
-            {
-                if (FD_ISSET(clian[i].getSocket_fd(), &io.read_cpy))
+                handleReadData(clian[i]);
+                if (clian[i].getClose_conn())
                 {
-                    handleReadData(clian[i]);
-                    if (clian[i].getClose_conn())
-                    {
-                        FD_CLR(clian[i].getSocket_fd(), &io.readfds);
-                        close(clian[i].getSocket_fd());
-                        clian.erase(clian.begin() + i);
-                    }
-                    else
-                    {
-                        FD_SET(clian[i].getSocket_fd(), &io.writefds);
-                        FD_CLR(clian[i].getSocket_fd(), &io.readfds);
-                    }
+                    FD_CLR(clian[i].getSocket_fd(), &io.readfds);
+                    close(clian[i].getSocket_fd());
+                    clian.erase(clian.begin() + i);
                 }
-            }
-            for (int i = 0; i < clian.size(); i++)
-            {
-                if (FD_ISSET(clian[i].getSocket_fd(), &io.write_cpy)) 
+                else
                 {
-                    handleWriteData(clian[i]);
-                    if (clian[i].getClose_conn())
-                    {
-                        FD_CLR(clian[i].getSocket_fd(), &io.writefds);
-                        close(clian[i].getSocket_fd());
-                        clian.erase(clian.begin() + i);
-                    }
-                    else if (clian[i].get_Resp().getOffset() == 0)
-                    {
-                        std::cout << "offsetttt = " << std::endl;
-                        FD_CLR(clian[i].getSocket_fd(), &io.writefds);
-                        close(clian[i].getSocket_fd());
-                        clian.erase(clian.begin() + i);
-                    }
+                    FD_SET(clian[i].getSocket_fd(), &io.writefds);
+                    FD_CLR(clian[i].getSocket_fd(), &io.readfds);
                 }
             }
         }
-
+        for (int i = 0; i < clian.size(); i++)
+        {
+            if (FD_ISSET(clian[i].getSocket_fd(), &io.write_cpy)) 
+            {
+                handleWriteData(clian[i]);
+                if (clian[i].getClose_conn())
+                {
+                    FD_CLR(clian[i].getSocket_fd(), &io.writefds);
+                    close(clian[i].getSocket_fd());
+                    clian.erase(clian.begin() + i);
+                }
+                else if (clian[i].get_Resp().getOffset() == 0)
+                {
+                    std::cout << "offsetttt = " << std::endl;
+                    FD_CLR(clian[i].getSocket_fd(), &io.writefds);
+                    close(clian[i].getSocket_fd());
+                    clian.erase(clian.begin() + i);
+                }
+            }
+        }
     }
 }

@@ -71,7 +71,7 @@ Request::Request(std::string request)
         throw std::invalid_argument("Invalid request");
     if (method == "POST" && content_length == -1 && tr_enc == "")
             throw std::invalid_argument("Invalid request");
-    if (strlen(std::strstr(request.c_str(), "\r\n\r\n") ? std::strstr(request.c_str(), "\r\n\r\n")  : "a") - 4 > 100 )
+    if (strlen(strstr(request.c_str(), "\r\n\r\n") ? strstr(request.c_str(), "\r\n\r\n")  : "a") - 4 > 100 )
     {
             throw std::invalid_argument("Invalid request");
     }
