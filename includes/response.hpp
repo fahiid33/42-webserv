@@ -26,6 +26,8 @@
 // #include "server.hpp"
 
 class Server;
+class Location;
+
 
 class Response
 {
@@ -45,6 +47,10 @@ class Response
     std::string getContentType(const std::string& file , std::map<std::string, std::string>& mime_t);
     std::map<std::string, std::string> mime_types_init();
     std::string auto_indexing(const char *path);
+    void    HandleGet(Request & req, Location & loc);
+    void    HandlePost(Request & req, Location & loc);
+    void    HandleDelete(Request & req, Location & loc);
+
 };
 
 std::pair<std::string, u_long> prepare_response(Request & req, Server & server);

@@ -51,7 +51,7 @@ public:
     void setup_server(std::vector<Server> &servers);
     int getMaxSd();
     void setMaxSd(int max_sd);
-    void handleNewConnection(Server & server, std::vector<std::pair <Socket, Server>> & clients);
+    void handleNewConnection(Server & server, std::vector<std::pair <Socket, Server> > & clients);
 
     void handleReadData(std::pair <Socket, Server> &);
     void handleWriteData(Socket &sock);

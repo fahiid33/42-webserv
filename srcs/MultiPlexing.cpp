@@ -91,7 +91,7 @@ void MultiPlexing::handleWriteData(Socket &sock)
         rc = write(sock.getSocket_fd() , sock.get_Resp().getResp().first.c_str() + sock.get_Resp().getOffset(), 1024);
         sock.get_Resp().setOffset(sock.get_Resp().getOffset() + rc);
     }
-    // std::cout << "rc = " << rc << std::endl;
+    std::cout << "rc = " << rc << std::endl;
     if (sock.get_Resp().getOffset() >= sock.get_Resp().getResp().second)
     {
         sock.get_Resp().setOffset(0);
@@ -108,7 +108,7 @@ void MultiPlexing::handleWriteData(Socket &sock)
 }
 
 
-void    MultiPlexing::handleNewConnection(Server & server, std::vector<std::pair <Socket, Server>> & clients)
+void    MultiPlexing::handleNewConnection(Server & server, std::vector<std::pair <Socket, Server> > & clients)
 {
     int new_socket;
     struct sockaddr_in address = server.getServerSocket().getAddress();
@@ -130,7 +130,7 @@ void    MultiPlexing::handleNewConnection(Server & server, std::vector<std::pair
         perror("In fcntl");
         exit(EXIT_FAILURE);
     }
-    // std::cout << "new_socket = " << new_socket << std::endl;
+    std::cout << "new_socket = " << new_socket << std::endl;
     FD_SET(new_socket, &io.readfds);
     if (new_socket > max_sd)
         max_sd = new_socket;
@@ -142,7 +142,7 @@ void MultiPlexing::setup_server(std::vector<Server> &servers)
     Socket sock;
     int new_socket;
     int desc_ready, close_conn = 0;
-    std::vector<std::pair <Socket, Server>> clients;
+    std::vector<std::pair <Socket, Server> > clients;
     int rc;
 
     for (int i = 0; i < servers.size(); i++)
@@ -152,7 +152,7 @@ void MultiPlexing::setup_server(std::vector<Server> &servers)
         servers[i].setServerSocket(sock);
         max_sd = servers[i].getServerFd();
         FD_SET(servers[i].getServerFd(), &io.readfds);
-        // std::cout << "port: " << servers[i].getPort() << " " << max_sd << std::endl;
+        std::cout << "port: " << servers[i].getPort() << " " << max_sd << std::endl;
     }
     while (1)
     {

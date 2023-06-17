@@ -29,6 +29,18 @@ Config::~Config()
 
 Location::Location()
 {
+    _locationNumber = "";
+    _locationPath = "";
+    _allowedMethods.clear();
+    _root = "";
+    _index.clear();
+    _autoIndex = false;
+    _uploadPath = "";
+    _redirection.first = "";
+    _redirection.second = "";
+    _cgi_extension.clear();
+    _cgi_path.clear();
+
 }
 
 Location::~Location()
