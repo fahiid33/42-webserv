@@ -32,7 +32,7 @@ Request::Request(std::string request)
         throw std::invalid_argument("Invalid request");
     this->file = path.substr(path.find_last_of('/') + 1, path.length() - 1);
     this->path = path.substr(0, path.find_last_of('/') + 1);
-    std::cout << request << std::endl;
+    // std::cout << request << std::endl;
     while(std::getline(file, line))
     {
         iss.clear();

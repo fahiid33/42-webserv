@@ -22,7 +22,10 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
+#include "request.hpp"
+// #include "server.hpp"
 
+class Server;
 
 class Response
 {
@@ -33,6 +36,7 @@ class Response
     u_long _offset;
     public:
     Response();
+    Response(Request & req, Server & server);
     ~Response();
     u_long getOffset();
     void setOffset(u_long offset);
@@ -43,4 +47,4 @@ class Response
     std::string auto_indexing(const char *path);
 };
 
-std::pair<std::string, u_long> prepare_response(const char *file_name,const char *dir);
+std::pair<std::string, u_long> prepare_response(Request & req, Server & server);

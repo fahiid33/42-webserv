@@ -24,10 +24,7 @@
 #include <sys/wait.h>
 #include "server.hpp"
 
-
-
 class Server;
-
 
 class Config
 {
