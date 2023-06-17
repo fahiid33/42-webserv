@@ -64,12 +64,12 @@ sockaddr_in Socket::getAddress()
     return address;
 }
 
-struct sockaddr_in   Socket::init_Sockadd()
+struct sockaddr_in   Socket::init_Sockadd(int port)
 {
     struct sockaddr_in  _sockaddr;
     _sockaddr.sin_family = AF_INET;
     _sockaddr.sin_addr.s_addr = INADDR_ANY;
-    _sockaddr.sin_port = htons(PORT);
+    _sockaddr.sin_port = htons(port);
     return _sockaddr;
 }
 
@@ -78,9 +78,9 @@ void Socket::setSocket_fd(int &socket_fd)
     s_fd = socket_fd;
 }
 
-void    Socket::create_sockets(void)
+void    Socket::create_sockets(int port)
 {
-    address = this->init_Sockadd();
+    address = this->init_Sockadd(port);
     int     on;
 
     if ((s_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 

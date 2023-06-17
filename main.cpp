@@ -14,16 +14,16 @@ int main(int ac, char **av)
     }
     else if (ac == 2)
     {
-        mp.setup_server();
-        // Config conf(av[1]);
-        // conf.parse_config();
+        Config conf(av[1]);
+        conf.parse_config();
+        mp.setup_server(conf.getServers());
         // create_socket();
     }
     else if (ac == 1)
     {
-        mp.setup_server();
-        // Config conf;
-        // conf.parse_config();
+        Config conf;
+        conf.parse_config();
+        mp.setup_server(conf.getServers());
         // for(int i =0; i < conf.getServers().size(); i++)
         // {
         //     conf.getServers()[i].print_server();

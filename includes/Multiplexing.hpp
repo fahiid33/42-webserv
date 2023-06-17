@@ -29,15 +29,28 @@
 #include "response.hpp"
 
 
+typedef struct IOsets
+{
+    fd_set readfds;
+    fd_set writefds;
+    fd_set read_cpy;
+    fd_set write_cpy;
+} IOsets;
+
 class MultiPlexing
 {
     Server server;
+    IOsets io;
+    int max_sd;
+
 
 public:
     MultiPlexing();
     ~MultiPlexing();
 
-    void setup_server();
+    void setup_server(std::vector<Server> &servers);
+    int getMaxSd();
+    void setMaxSd(int max_sd);
     void handleNewConnection(Server &server, std::vector<Socket> &Sock);
     void handleReadData(Socket &pdo);
     void handleWriteData(Socket &sock);

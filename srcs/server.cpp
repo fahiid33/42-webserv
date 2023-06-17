@@ -77,7 +77,12 @@ fd_set& Server::getWriteFds()
     return write_fds;
 }
 
-fd_set& Server::getWorkingSet()
+fd_set &Server::getWriteCpy()
+{
+    return write_cpy;
+}
+
+fd_set &Server::getWorkingSet()
 {
     return working_set;
 }

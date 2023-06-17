@@ -95,6 +95,7 @@ class Server
         Socket ser;
         fd_set master_set;
         fd_set working_set;
+        fd_set write_cpy;
         fd_set write_fds;
         size_t _port;
         std::string _host;
@@ -114,6 +115,7 @@ class Server
         void setMasterSet(int fd);
         fd_set& getMasterSet();
         fd_set& getWriteFds();
+        fd_set& getWriteCpy();
         fd_set& getWorkingSet();
         Socket & getServerSocket();
 

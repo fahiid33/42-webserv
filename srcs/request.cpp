@@ -26,7 +26,10 @@ Request::Request(std::string request)
     iss >> method >> path >> version;
     if(iss >> version)
         throw std::invalid_argument("Invalid request");
-    
+    if (path.size() > 2048)
+        throw std::invalid_argument("Invalid request");
+    if (path.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%") != std::string::npos)
+        throw std::invalid_argument("Invalid request");
     this->file = path.substr(path.find_last_of('/') + 1, path.length() - 1);
     this->path = path.substr(0, path.find_last_of('/') + 1);
     std::cout << request << std::endl;
@@ -66,16 +69,14 @@ Request::Request(std::string request)
     }
     if ((method != "GET" && method != "POST" && method != "DELETE") || version != "HTTP/1.1")
         throw std::invalid_argument("Invalid request");
-    if (method == "POST"){
-        if (content_length == -1 && tr_enc == "")
+    if (method == "POST" && content_length == -1 && tr_enc == "")
             throw std::invalid_argument("Invalid request");
-        else if (strlen(std::strstr(request.c_str(), "\r\n\r\n") ? std::strstr(request.c_str(), "\r\n\r\n")  : "a") > 100 )
+    if (strlen(std::strstr(request.c_str(), "\r\n\r\n") ? std::strstr(request.c_str(), "\r\n\r\n")  : "a") - 4 > 100 )
+    {
             throw std::invalid_argument("Invalid request");
     }
-    if (path.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%") != std::string::npos)
-        throw std::invalid_argument("Invalid request");
-    if (path.size() > 2048)
-        throw std::invalid_argument("Invalid request");
+    
+    
 }
 
 Request::~Request()
