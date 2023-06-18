@@ -48,7 +48,7 @@ class Socket{
         struct sockaddr_in getAddress();
         struct sockaddr_in   init_Sockadd(int port);
         
-        void setClose_conn(const int &close_conn);
+        void setClose_conn(const int close_conn);
         void setSocket_fd(int &socket_fd);
         void setResp(Response &resp);
         void setReq(Request &req);

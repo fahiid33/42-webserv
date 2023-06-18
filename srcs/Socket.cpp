@@ -1,7 +1,7 @@
 
 #include "../includes/socket.hpp"
 
-Socket::Socket()
+Socket::Socket() : s_fd(0), close_conn(0), resp(Response()), req(Request()), address()
 {
     
 }
@@ -15,16 +15,26 @@ Socket::Socket(int s_fd, sockaddr_in address)
 
 Socket::~Socket()
 {
+    struct sockaddr_in  _sockaddr;
+    Response resp;
+    Request req;
+    this->close_conn = 0;
+    this->s_fd = 0;
+    this->address = _sockaddr;
+    this->resp = resp;
+    this->req = req;
 }
 
 Socket & Socket::operator=(const Socket &sock)
 {
     this->s_fd = sock.s_fd;
     this->address = sock.address;
+    this->resp = sock.resp;
+    this->req = sock.req;
     return *this;
 }
 
-void Socket::setClose_conn(const int &close_conn)
+void Socket::setClose_conn(const int close_conn)
 {
     this->close_conn = close_conn;
 }

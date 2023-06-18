@@ -39,8 +39,10 @@ class Request {
 
     public:
         Request();
+        Request(const Request &request);
         Request(std::string request);
         ~Request();
+        Request &operator=(const Request &request);
         
         std::string getMethod();
         std::string getPath();
@@ -52,8 +54,4 @@ class Request {
         std::string getTr_enc();
         std::string getRequest();
         void setRequest(std::string request);
-        Request &operator=(const Request &request){
-            this->request = request.request;
-            return *this;
-        };
 };

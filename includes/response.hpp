@@ -41,8 +41,10 @@ class Response
     u_long _offset;
     public:
     Response();
+    Response(const Response &resp);
     Response(Request & req, Server & server);
     ~Response();
+    Response & operator=(const Response &resp);
     u_long getOffset();
     void setOffset(u_long offset);
     int getIsOpen();

@@ -6,6 +6,25 @@ Response::Response() : _offset(0), fd(0), is_open(0) {}
 
 Response::~Response() {}
 
+Response::Response(const Response &resp)
+{
+    this->_offset = resp._offset;
+    this->fd = resp.fd;
+    this->is_open = resp.is_open;
+    this->file = resp.file;
+    this->_resp = resp._resp;
+}
+
+Response & Response::operator=(const Response &resp)
+{
+    this->_offset = resp._offset;
+    this->fd = resp.fd;
+    this->is_open = resp.is_open;
+    this->file = resp.file;
+    this->_resp = resp._resp;
+    return *this;
+}
+
 size_t last_char_pos(std::string str, std::string str2)
 {
     std::string::iterator it = str.begin();
@@ -189,11 +208,12 @@ void Response::HandleGet(Request &req, Location &loc)
     }
     file.open(request_resource, std::ios::binary | std::ios::ate);
     std::string str;
-    _resp.first += "\nContent-Length:";
+    _resp.first += "\nConnection: Keep-Alive";
+    _resp.first += "\nContent-Length: ";
     _resp.second = file.tellg();
     file.seekg(0, std::ios::beg);
     _resp.first += std::to_string(_resp.second);
-    _resp.first += "\nConnection: Keep-Alive\n\n";
+    _resp.first += "\n\n";
     this->file = request_resource;
     // std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     // _resp.first += content + "\n";

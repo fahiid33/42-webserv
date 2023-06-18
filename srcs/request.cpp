@@ -6,7 +6,32 @@ Request::Request()
     this->request = "";
 }
 
+Request::Request(const Request &req)
+{
+    this->request = req.request;
+    this->content_length = req.content_length;
+    this->tr_enc = req.tr_enc;
+    this->method = req.method;
+    this->path = req.path;
+    this->version = req.version;
+    this->host = req.host;
+    this->file = req.file;
+    this->conn = req.conn;
+}
 
+Request &Request::operator=(const Request &req)
+{
+    this->request = req.request;
+    this->content_length = req.content_length;
+    this->tr_enc = req.tr_enc;
+    this->method = req.method;
+    this->path = req.path;
+    this->version = req.version;
+    this->host = req.host;
+    this->file = req.file;
+    this->conn = req.conn;
+    return *this;
+}
 
 Request::Request(std::string request)
 {
