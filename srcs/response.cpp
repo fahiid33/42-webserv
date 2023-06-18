@@ -33,7 +33,7 @@ Response::Response(Request & req, Server & server)
     if (std::find(it->getAllowedMethods().begin(), it->getAllowedMethods().end(), req.getMethod()) == it->getAllowedMethods().end())
     {
         _resp.first = "HTTP/1.1 405 Method Not Allowed\nContent-Type: text/html\nContent-Length: 13\n\n405 method not allowed";
-        _resp.second = 84;
+        _resp.second = 102;
         return ;
     }
     if (req.getMethod() == "GET")
@@ -208,6 +208,65 @@ void Response::HandlePost(Request &req, Location &loc)
 
 void Response::HandleDelete(Request &req, Location &loc)
 {
+    std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
+    if (!file_exists(request_resource.c_str()))
+    {
+        _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
+        _resp.second = 84;
+        return ;
+    }
+    if (isDirectory(request_resource.c_str()))
+    {
+        if (request_resource[request_resource.length() - 1] != '/')
+        {
+            _resp.first = "HTTP/1.1 409 Conflict\nContent-Type: text/html\nContent-Length: 13\n\n409 conflict";
+            _resp.second = 82;
+            return ;
+        }
+        if(loc.get_cgi_path().empty())
+        {
+            std::cout << "" << request_resource << std::endl;
+            if(!remove(request_resource.c_str()))
+            {
+                _resp.first = "HTTP/1.1 204 No Content\nContent-Type: text/html\nContent-Length: 13\n\n204 no content";
+                _resp.second = 84;
+                return ;
+            }
+            else
+            {
+                if(access(request_resource.c_str(), W_OK))
+                {
+                    _resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 13\n\n403 forbidden";
+                    _resp.second = 84;
+                    return ;
+                }
+                else
+                {
+                    _resp.first = "HTTP/1.1 500 Internal Server Error\nContent-Type: text/html\nContent-Length: 13\n\n500 internal server error";
+                    _resp.second = 108;
+                    return ;
+                }
+            }
+        }
+    }
+    else
+    {
+       if(loc.get_cgi_path().empty())
+       {
+            if(!remove(request_resource.c_str()))
+            {
+                _resp.first = "HTTP/1.1 204 No Content\nContent-Type: text/html\nContent-Length: 13\n\n204 no content";
+                _resp.second = 84;
+                return ;
+            }
+            else
+            {
+                _resp.first = "HTTP/1.1 500 Internal Server Error\nContent-Type: text/html\nContent-Length: 13\n\n500 internal server error";
+                _resp.second = 108;
+                return ;
+            }
+       }
+    }
 }
 
 std::string  Response::getContentType(const std::string& file , std::map<std::string, std::string>& mime_t)
