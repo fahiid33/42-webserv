@@ -197,6 +197,7 @@ void MultiPlexing::setup_server(std::vector<Server> &servers)
                 {
                     FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
                     close(clients[i].first.getSocket_fd());
+                    close(clients[i].first.get_Resp().getFd());
                     clients[i].first.setClose_conn(0);
                     clients.erase(clients.begin() + i);
                     i--;
@@ -213,6 +214,7 @@ void MultiPlexing::setup_server(std::vector<Server> &servers)
                     std::cout << YELLOW << "yes dead " << clients[i].first.get_Resp().getFile() << std::endl;
                     FD_CLR(clients[i].first.getSocket_fd(), &io.writefds);
                     close(clients[i].first.getSocket_fd());
+                    close(clients[i].first.get_Resp().getFd());
                     clients[i].first.setClose_conn(0);
                     clients.erase(clients.begin() + i);
                     i--;
