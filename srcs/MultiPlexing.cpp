@@ -25,12 +25,12 @@ void MultiPlexing::setMaxSd(int max_sd)
 
 void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
 {
-    char buffer[30000];
+    char buffer[10002];
     int rc = 0;
     std::istringstream iss;
     std::string hello;
 
-    bzero(buffer, 30000);
+    bzero(buffer, 10000);
     std::cout << "socket read from it " << client.first.getSocket_fd() << std::endl;
         if ((rc = read(client.first.getSocket_fd(), buffer, sizeof(buffer))) < 0) 
         {
@@ -52,7 +52,7 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
         try
         {
             Request req(str);
-            client.first.get_Resp().setResp(prepare_response(req, client.second));
+            client.first.get_Resp().prepare_response(req, client.second);
             iss.clear();
         }
         catch(const std::exception& e)
@@ -61,7 +61,6 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
             exit(1);
         }
         
-
         // if (hello.cend()[-1] == '/') {
         //     if (hello == "/") {
         //         hello = resp.auto_indexing("./");
@@ -79,25 +78,39 @@ void MultiPlexing::handleWriteData(Socket &sock)
 {
     //  handling client data writing
     // Get the appropriate response data to send back to the client
+    char buffer[1024];
+    bzero(buffer, 1024);
     int rc ;
-    if (sock.get_Resp().getResp().second < 1024)
+    if (!sock.get_Resp().getIsOpen())
     {
-        rc = write(sock.getSocket_fd() , sock.get_Resp().getResp().first.c_str(),
-            sock.get_Resp().getResp().second);
-        sock.setClose_conn(1);
-    }
-    else
-    {
-        rc = write(sock.getSocket_fd() , sock.get_Resp().getResp().first.c_str() + sock.get_Resp().getOffset(), 1024);
-        sock.get_Resp().setOffset(sock.get_Resp().getOffset() + rc);
-    }
-    std::cout << "rc = " << rc << std::endl;
-    if (sock.get_Resp().getOffset() >= sock.get_Resp().getResp().second)
-    {
-        sock.get_Resp().setOffset(0);
-        sock.setClose_conn(1);
+        rc = write(sock.getSocket_fd() , sock.get_Resp().getResp().first.c_str(), sock.get_Resp().getResp().first.length());
+        if (sock.get_Resp().getFile() != "")
+        {
+            sock.get_Resp().setFd(open(sock.get_Resp().getFile().c_str(), O_RDONLY));
+            if (sock.get_Resp().getFd() < 0)
+            {
+                perror("open");
+                sock.setClose_conn(1);
+                return ;
+            }
+            sock.get_Resp().setIsOpen(1);
+        }
         return ;
     }
+    if ((sock.get_Resp().getOffset() + 1024) >= sock.get_Resp().getResp().second && sock.get_Resp().getFile() != "")
+    {
+        read(sock.get_Resp().getFd(), buffer, sock.get_Resp().getResp().second - sock.get_Resp().getOffset());
+        rc = write(sock.getSocket_fd() , buffer , sock.get_Resp().getResp().second - sock.get_Resp().getOffset());
+        sock.get_Resp().setOffset(sock.get_Resp().getOffset() + rc);
+        sock.setClose_conn(1);
+    }
+    else if (sock.get_Resp().getFile() != "")
+    {
+        read(sock.get_Resp().getFd(), buffer, 1024);
+        rc = write(sock.getSocket_fd() , buffer, 1024);
+        sock.get_Resp().setOffset(sock.get_Resp().getOffset() + rc);
+    }
+    
     if (rc < 0)
     {
         perror("  write() failed");
@@ -167,7 +180,7 @@ void MultiPlexing::setup_server(std::vector<Server> &servers)
         }
         if (rc == 0)
         {
-            printf("select() timed out.  End program.\n");
+            // printf("select() timed out.  End program.\n");
             continue;
         }
 
@@ -186,17 +199,11 @@ void MultiPlexing::setup_server(std::vector<Server> &servers)
             if (FD_ISSET(clients[i].first.getSocket_fd(), &io.read_cpy))
             {
                 handleReadData(clients[i]);
-                if (clients[i].first.getClose_conn())
-                {
-                    FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
-                    close(clients[i].first.getSocket_fd());
-                    clients.erase(clients.begin() + i);
-                }
-                else
+                if (!clients[i].first.getClose_conn())
                 {
                     FD_SET(clients[i].first.getSocket_fd(), &io.writefds);
-                    FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
                 }
+                FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
             }
         }
         for (int i = 0; i < clients.size(); i++)
@@ -204,19 +211,19 @@ void MultiPlexing::setup_server(std::vector<Server> &servers)
             if (FD_ISSET(clients[i].first.getSocket_fd(), &io.write_cpy)) 
             {
                 handleWriteData(clients[i].first);
-                if (clients[i].first.getClose_conn())
-                {
-                    FD_CLR(clients[i].first.getSocket_fd(), &io.writefds);
-                    close(clients[i].first.getSocket_fd());
-                    clients.erase(clients.begin() + i);
-                }
-                else if (clients[i].first.get_Resp().getOffset() == 0)
-                {
-                    // std::cout << "offsetttt = " << std::endl;
-                    FD_CLR(clients[i].first.getSocket_fd(), &io.writefds);
-                    close(clients[i].first.getSocket_fd());
-                    clients.erase(clients.begin() + i);
-                }
+            }
+        }
+        for (int i = 0; i < clients.size(); i++)
+        {
+            if (clients[i].first.getClose_conn())
+            {
+                FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
+                FD_CLR(clients[i].first.getSocket_fd(), &io.writefds);
+                if (clients[i].first.get_Resp().getFd() != 0)
+                    close(clients[i].first.get_Resp().getFd());
+                close(clients[i].first.getSocket_fd());
+                clients.erase(clients.begin() + i);
+                i--;
             }
         }
     }

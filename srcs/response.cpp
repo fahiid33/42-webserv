@@ -2,52 +2,26 @@
 #include "../includes/response.hpp"
 #include "../includes/server.hpp"
 
-Response::Response() : _offset(0) {}
+Response::Response() : _offset(0), fd(0), is_open(0) {}
 
 Response::~Response() {}
 
+size_t last_char_pos(std::string str, std::string str2)
+{
+    std::string::iterator it = str.begin();
+    std::string::iterator it2 = str2.begin();
+    size_t pos = 0;
+    while (*it == *it2 && it != str.end() && it2 != str2.end())
+    {
+        it++;
+        it2++;
+        pos++;
+    }
+    return pos;
+}
+
 Response::Response(Request & req, Server & server)
 {
-    std::vector<Location>::iterator it = server.getLocations().begin();
-    while (it != server.getLocations().end())
-    {
-        if (req.getPath() == it->getLocationPath())
-        {
-            std::cout << req.getPath() << " == " <<it->getLocationPath() << std::endl;
-            break;
-        }
-        it++;
-    }
-    if (it == server.getLocations().end())
-    {
-        _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
-        _resp.second = 84;
-        return ;
-    }
-    if (it->getRedirection().first != "")
-    {
-        _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + it->getRedirection().first + "\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
-        _resp.second = 84;
-        return ;
-    }
-    if (std::find(it->getAllowedMethods().begin(), it->getAllowedMethods().end(), req.getMethod()) == it->getAllowedMethods().end())
-    {
-        _resp.first = "HTTP/1.1 405 Method Not Allowed\nContent-Type: text/html\nContent-Length: 13\n\n405 method not allowed";
-        _resp.second = 102;
-        return ;
-    }
-    if (req.getMethod() == "GET")
-    {
-        HandleGet(req, *it);
-    }
-    else if (req.getMethod() == "POST")
-    {
-        HandlePost(req, *it);
-    }
-    else if (req.getMethod() == "DELETE")
-    {
-        HandleDelete(req, *it);
-    }
 }
 
 
@@ -59,6 +33,36 @@ u_long Response::getOffset()
 void Response::setOffset(u_long offset)
 {
     _offset = offset;
+}
+
+int Response::getIsOpen()
+{
+    return is_open;
+}
+
+void Response::setIsOpen(int is_open)
+{
+    this->is_open = is_open;
+}
+
+void Response::setFd(int fd)
+{
+    this->fd = fd;
+}
+
+int Response::getFd()
+{
+    return fd;
+}
+
+std::string Response::getFile()
+{
+    return file;
+}
+
+void Response::setFile(std::string file)
+{
+    this->file = file;
 }
 
 std::pair<std::string, u_long> &Response::getResp()
@@ -138,7 +142,6 @@ void Response::HandleGet(Request &req, Location &loc)
     std::map<std::string, std::string> mimeTypes = mime_types_init();
     std::string contentType = getContentType(req.getFile(), mimeTypes);
     std::vector<std::string>::iterator it;
-                std::cout << "starrrrrt" << std::endl;
 
     _resp.first = "HTTP/1.1 200 OK\nContent-Type: ";
     _resp.first += contentType;
@@ -173,12 +176,8 @@ void Response::HandleGet(Request &req, Location &loc)
         {
             if (loc.getAutoIndex())
             {
-                std::cout << "starrrrrt   " << request_resource << std::endl;
-
                 auto_indexing(request_resource.c_str());
-                std::cout << "auto indexing" << _resp.first << "\n lenght :" << _resp.second << std::endl;
                 return ;
-                
             }
             else
             {
@@ -194,10 +193,10 @@ void Response::HandleGet(Request &req, Location &loc)
     _resp.second = file.tellg();
     file.seekg(0, std::ios::beg);
     _resp.first += std::to_string(_resp.second);
-    _resp.first += "\n\n";
-    _resp.second = _resp.second + _resp.first.length();
-    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    _resp.first += content;
+    _resp.first += "\nConnection: Keep-Alive\n\n";
+    this->file = request_resource;
+    // std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    // _resp.first += content + "\n";
 }
 
 void Response::HandlePost(Request &req, Location &loc)
@@ -225,7 +224,6 @@ void Response::HandleDelete(Request &req, Location &loc)
         }
         if(loc.get_cgi_path().empty())
         {
-            std::cout << "" << request_resource << std::endl;
             if(!remove(request_resource.c_str()))
             {
                 _resp.first = "HTTP/1.1 204 No Content\nContent-Type: text/html\nContent-Length: 13\n\n204 no content";
@@ -284,9 +282,50 @@ std::string  Response::getContentType(const std::string& file , std::map<std::st
     return "application/octet-stream";
 }
 
-std::pair<std::string, u_long> prepare_response(Request & req, Server & server)
+void  Response::prepare_response(Request & req, Server & server)
 {
-    Response respp(req, server);
+    std::vector<Location>::iterator it = server.getLocations().begin();
+    std::vector<Location>::iterator tmp = server.getLocations().begin();
+    
+    size_t max = 0;
 
-    return respp.getResp();
+    while (tmp != server.getLocations().end())
+    {
+        if (last_char_pos(req.getPath(), tmp->getLocationPath()) > max)
+        {
+            it = tmp;
+            max = last_char_pos(req.getPath(), tmp->getLocationPath());
+        }
+        tmp++;
+    }
+    if (max == 0)
+    {
+        _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
+        _resp.second = 84;
+        return ;
+    }
+    if (it->getRedirection().first != "")
+    {
+        _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + it->getRedirection().first + "\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
+        _resp.second = 84;
+        return ;
+    }
+    if (std::find(it->getAllowedMethods().begin(), it->getAllowedMethods().end(), req.getMethod()) == it->getAllowedMethods().end())
+    {
+        _resp.first = "HTTP/1.1 405 Method Not Allowed\nContent-Type: text/html\nContent-Length: 13\n\n405 method not allowed";
+        _resp.second = 102;
+        return ;
+    }
+    if (req.getMethod() == "GET")
+    {
+        HandleGet(req, *it);
+    }
+    else if (req.getMethod() == "POST")
+    {
+        HandlePost(req, *it);
+    }
+    else if (req.getMethod() == "DELETE")
+    {
+        HandleDelete(req, *it);
+    }
 }
