@@ -88,33 +88,107 @@ std::map<std::string, std::string>    Response::mime_types_init()
     return mimeTypes;
 }
 
+int isDirectory(const char *path) {
+   struct stat statbuf;
+   if (stat(path, &statbuf) != 0)
+       return 0;
+   return S_ISDIR(statbuf.st_mode);
+}
+
+bool file_exists (const char *filename) {
+  struct stat   buffer;   
+  return (stat (filename, &buffer) == 0);
+}
+
+void    Response::auto_indexing(const char *dir)
+{
+    std::string resp = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length:";
+    std::string str = "<html><head><title>Index of /</title></head><body><h1>Index of /</h1><hr><pre>";
+    DIR *dp;
+    struct dirent *dirp;
+
+    if ((dp = opendir(dir)) == NULL)
+    {
+        str += "</pre><hr></body></html>";
+        resp += std::to_string(str.length());
+        resp += "\n\n";
+        resp += str;
+        _resp.first = resp;
+        _resp.second = resp.length();
+        return ;
+    }
+    while ((dirp = readdir(dp)) != NULL)
+    {
+        str += "<a href=\"";
+        str += dirp->d_name;
+        str += "\">";
+        str += dirp->d_name;
+        str += "</a>\n";
+    }
+    str += "</pre><hr></body></html>";
+    resp += std::to_string(str.length());
+    resp += "\n\n";
+    resp += str;
+    _resp.first = resp;
+    _resp.second = resp.length();
+}
+
 void Response::HandleGet(Request &req, Location &loc)
 {
     std::map<std::string, std::string> mimeTypes = mime_types_init();
     std::string contentType = getContentType(req.getFile(), mimeTypes);
+    std::vector<std::string>::iterator it;
+                std::cout << "starrrrrt" << std::endl;
 
     _resp.first = "HTTP/1.1 200 OK\nContent-Type: ";
     _resp.first += contentType;
     std::ifstream file;
-    file.open(req.getFile(), std::ios::binary | std::ios::ate);
-    if (!file.is_open() || access(req.getPath().c_str(), R_OK) == -1)
+    std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
+    if (!file_exists(request_resource.c_str()))
     {
-        //check if the file exist
-        if (access(req.getFile().c_str(), F_OK) == -1)
-        {    
-            _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
+        _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
+        _resp.second = 84;
+        return ;
+    }
+    if (isDirectory(request_resource.c_str()))
+    {
+        // check if request_resource has / at the end
+        if (request_resource[request_resource.length() - 1] != '/')
+        {
+            _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + req.getPath() + req.getFile() + "/\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
             _resp.second = 84;
             return ;
         }
-        std::cout << "dir ="<< req.getPath() << std::endl;
-        //check if the file has read permission
-        if (access(req.getFile().c_str(), R_OK) == -1 || access(req.getPath().c_str(), R_OK) == -1)
+        // check if request_resource has index file
+        for (it = loc.getIndex().begin(); it != loc.getIndex().end(); it++)
         {
-            _resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 15\n\n403 forbidden";
-            _resp.second = 84;
-            return ;
+            //  /Users/hlachkar/www/pos/index.html
+            if (file_exists((request_resource + *it).c_str()))
+            {
+                request_resource += *it;
+                break;
+            }
+        }
+        if (it == loc.getIndex().end())
+        {
+            if (loc.getAutoIndex())
+            {
+                std::cout << "starrrrrt   " << request_resource << std::endl;
+
+                auto_indexing(request_resource.c_str());
+                std::cout << "auto indexing" << _resp.first << "\n lenght :" << _resp.second << std::endl;
+                return ;
+                
+            }
+            else
+            {
+                _resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 13\n\n403 forbidden";
+                _resp.second = 84;
+                return ;
+            }
         }
     }
+    file.open(request_resource, std::ios::binary | std::ios::ate);
     std::string str;
     _resp.first += "\nContent-Length:";
     _resp.second = file.tellg();
@@ -128,38 +202,13 @@ void Response::HandleGet(Request &req, Location &loc)
 
 void Response::HandlePost(Request &req, Location &loc)
 {
+    _resp.first = "HTTP/1.1 201 Created\nContent-Type: text/html\nContent-Length: 13\n\n201 created";
+    _resp.second = 84;
 }
 
 void Response::HandleDelete(Request &req, Location &loc)
 {
 }
-
-
-// std::string    Response::auto_indexing(const char *dir)
-// {
-//     std::string resp = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length:";
-//     std::string str = "<html><head><title>Index of /</title></head><body><h1>Index of /</h1><hr><pre>";
-//     DIR *dp;
-//     struct dirent *dirp;
-//     if((dp  = opendir(dir)) == NULL)
-//     {
-//         resp = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
-//         return resp;
-//     }
-//     while ((dirp = readdir(dp)) != NULL)
-//     {
-//         str += "<a href=\"";
-//         str += dirp->d_name;
-//         str += "\">";
-//         str += dirp->d_name;
-//         str += "</a>\n";
-//     }
-//     str += "</pre><hr></body></html>";
-//     resp += std::to_string(str.length());
-//     resp += "\n\n";
-//     resp += str;
-//     return resp;
-// }
 
 std::string  Response::getContentType(const std::string& file , std::map<std::string, std::string>& mime_t)
 {
@@ -171,6 +220,8 @@ std::string  Response::getContentType(const std::string& file , std::map<std::st
             return it->second;
         }
     }
+    if (file == "")
+        return "text/html";
     return "application/octet-stream";
 }
 
