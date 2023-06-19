@@ -35,6 +35,7 @@ class Location
         std::string                                         _root;
         std::vector<std::string>                            _index;
         bool                                                _autoIndex;
+        size_t _clientMaxBodySize;
         std::string                                         _uploadPath;
         std::pair<std::string, std::string>                 _redirection;
         std::vector<std::string>                            _cgi_extension;     // .php
@@ -55,6 +56,7 @@ class Location
         bool                                                & getAutoIndex();
         std::string                                         & getUploadPath();
         std::pair<std::string, std::string>                 & getRedirection();
+        size_t                                              & getClientMaxBodySize();
 
         void                                                setLocationNumber(std::string locationNumber);
         void                                                setLocationPath(std::string locationPath);
@@ -64,6 +66,8 @@ class Location
         void                                                setAutoIndex(bool autoIndex);
         void                                                setUploadPath(std::string uploadPath);
         void                                                setRedirection(std::pair<std::string, std::string> redirection);
+        void                                                setClientMaxBodySize(size_t clientMaxBodySize);
+
         void                                                print_location(){
             std::cout << "locationNumber : " << _locationNumber << std::endl;
             std::cout << "locationPath : " << _locationPath << std::endl;
@@ -85,6 +89,7 @@ class Location
                 std::cout << _cgi_path[i] << " "; 
             std::cout << std::endl;
             std::cout << "redirection : " << _redirection.first << " " << _redirection.second << std::endl;
+            std::cout << "clientMaxBodySize : " << _clientMaxBodySize << std::endl;
         }
 };
 
@@ -103,8 +108,6 @@ class Server
         std::vector<std::string> _serverNames;
         std::vector<Location> _locations;
         std::vector<std::pair<size_t, std::string> > _error_pages;
-        size_t _clientMaxBodySize;
-
         std::string _root;
         std::vector<std::string> _index;
         int max_sd;
@@ -123,7 +126,6 @@ class Server
         size_t & getPort();
         std::vector<std::string> & getServerNames();
         std::vector<Location> & getLocations();
-        size_t & getClientMaxBodySize();
         std::string & getHost();
         std::vector<std::pair<size_t, std::string> > & getError_pages();
         int getServerFd();
@@ -142,7 +144,6 @@ class Server
         void    setHost(std::string host);
         void    setRoot(std::string root);
         void    setIndex(std::vector<std::string> index);
-        void    setClientMaxBodySize(size_t clientMaxBodySize);
         void    setError_pages(std::vector<std::pair<size_t, std::string> > error_pages);
         void    print_server(){
             std::cout << "port : " << _port << std::endl;
@@ -152,7 +153,6 @@ class Server
             for (size_t i = 0; i < _index.size(); i++)
                 std::cout << _index[i] << " ";
             std::cout << std::endl;
-            std::cout << "clientMaxBodySize : " << _clientMaxBodySize << std::endl;
             std::cout << "serverNames : ";
             for (size_t i = 0; i < _serverNames.size(); i++)
                 std::cout << _serverNames[i] << " ";

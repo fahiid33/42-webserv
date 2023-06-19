@@ -221,8 +221,62 @@ void Response::HandleGet(Request &req, Location &loc)
 
 void Response::HandlePost(Request &req, Location &loc)
 {
-    _resp.first = "HTTP/1.1 201 Created\nContent-Type: text/html\nContent-Length: 13\n\n201 created";
-    _resp.second = 84;
+    // if location support upload
+    if (loc.getClientMaxBodySize() < req.getBody().length())
+    {
+        _resp.first = "HTTP/1.1 413 Payload Too Large\nContent-Type: text/html\nContent-Length: 13\n\n413 payload too large";
+        _resp.second = 84;
+        return ;
+    }
+    // 201 created
+    // std::string new_file(strrchr(req.get_body().c_str(), '/') + get_file_ext(std::string(req.get_type())));
+    // std::string file_name = remove_repeated_slashes(loc.get_upload_path() + "/" + new_file);
+    // std::ifstream in(req.get_body().c_str(), std::ios::in | std::ios::binary);
+    // std::ofstream out(file_name, std::ios::out | std::ios::binary);
+    // out << in.rdbuf();
+    // in.close();
+    // out.close();
+    // std::cout << "here" << std::endl;
+    // remove(req.get_body().c_str());
+    // set_status_code(201);
+    std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
+    if (file_exists(request_resource.c_str()))
+    {
+        _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
+        _resp.second = 84;
+        return ;
+    }
+    std::vector<std::string>::iterator it;
+    if (isDirectory(request_resource.c_str()))
+    {
+        if (request_resource[request_resource.length() - 1] != '/')
+        {
+            _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + req.getPath() + req.getFile() + "/\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
+            _resp.second = 84;
+            return ;
+        }
+        for (it = loc.getIndex().begin(); it != loc.getIndex().end(); it++)
+        {
+            if (file_exists((request_resource + *it).c_str()))
+            {
+                if (!loc.get_cgi_path().empty())
+                {
+                     // run_cgi();
+                     return ;
+                }
+                else
+                {
+                    _resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 13\n\n403 forbidden";
+                    _resp.second = 84;
+                    return ;
+                }
+            }
+        }
+         _resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 13\n\n403 forbidden";
+        _resp.second = 84;
+        return ;
+    }
+
 }
 
 void Response::HandleDelete(Request &req, Location &loc)
@@ -350,7 +404,7 @@ void  Response::prepare_response(Request & req, Server & server)
     }
     if (req.getMethod() == "GET")
     {
-        std::cout << "Dkhaeeel" << std::endl;
+
         HandleGet(req, *it);
     }
     else if (req.getMethod() == "POST")

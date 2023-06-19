@@ -53,5 +53,6 @@ class Request {
         int         getContent_length();
         std::string getTr_enc();
         std::string getRequest();
+        std::string getBody();
         void setRequest(std::string request);
 };

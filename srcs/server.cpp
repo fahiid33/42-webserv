@@ -8,7 +8,6 @@ Server::Server()
     FD_ZERO(&write_fds);
     _port = 0;
     _host = "";
-    _clientMaxBodySize = 0;
     _serverNames.clear();
     _locations.clear();
     _error_pages.clear();
@@ -103,7 +102,7 @@ std::vector<Location> &Server::getLocations()
     return this->_locations;
 }
 
-size_t &Server::getClientMaxBodySize()
+size_t &Location::getClientMaxBodySize()
 {
     return this->_clientMaxBodySize;
 }
@@ -138,7 +137,7 @@ void Server::setHost(std::string host)
     this->_host = host;
 }
 
-void Server::setClientMaxBodySize(size_t clientMaxBodySize)
+void Location::setClientMaxBodySize(size_t clientMaxBodySize)
 {
     this->_clientMaxBodySize = clientMaxBodySize;
 }

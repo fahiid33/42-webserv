@@ -31,6 +31,7 @@ Location::Location()
 {
     _locationNumber = "";
     _locationPath = "";
+    _clientMaxBodySize = 0;
     _allowedMethods.clear();
     _root = "";
     _index.clear();
@@ -174,8 +175,6 @@ void Config::parse_config()
                 while(iss >> tmp >> value)
                     errorPage.push_back(std::make_pair(tmp, value));
                 currentServer.setError_pages(errorPage);
-            } else if (directive == "client_max_body_size" && iss >> tmp) {
-                currentServer.setClientMaxBodySize(tmp);
             } else if (directive == "location"){
                 if (iss >> value) {
                     currentLocation.setLocationPath(value);
@@ -208,6 +207,9 @@ void Config::parse_config()
                         } else if(directive == "cgi_path") {
                             while(iss >> value)
                                 currentLocation.get_cgi_path().push_back(value);
+                        }
+                        else if (directive == "max_body_size" && iss >> tmp) {
+                                currentLocation.setClientMaxBodySize(tmp);
                         } else if(directive == "cgi_ext") {
                             while(iss >> value)
                                 currentLocation.get_cgi_extension().push_back(value);

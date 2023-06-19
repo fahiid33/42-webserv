@@ -100,6 +100,7 @@ Request::Request(std::string request)
     {
             throw std::invalid_argument("Invalid request");
     }
+    this->body = this->request.substr(this->request.find("\r\n\r\n") + 4, this->request.length() - 1);
     
     
 }
@@ -141,6 +142,11 @@ std::string Request::getConn()
 std::string Request::getTr_enc()
 {
     return this->tr_enc;
+}
+
+std::string Request::getBody()
+{
+    return this->body;
 }
 
 std::string Request::getRequest()
