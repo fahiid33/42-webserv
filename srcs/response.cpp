@@ -43,7 +43,6 @@ Response::Response(Request & req, Server & server)
 {
 }
 
-
 u_long Response::getOffset()
 {
     return _offset;
@@ -166,6 +165,7 @@ void Response::HandleGet(Request &req, Location &loc)
     _resp.first += contentType;
     std::ifstream file;
     std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
+    std::cout << "request_resource: " << request_resource << std::endl;
     if (!file_exists(request_resource.c_str()))
     {
         _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
@@ -305,25 +305,37 @@ std::string  Response::getContentType(const std::string& file , std::map<std::st
 void  Response::prepare_response(Request & req, Server & server)
 {
     std::vector<Location>::iterator it = server.getLocations().begin();
-    std::vector<Location>::iterator tmp = server.getLocations().begin();
-    
-    size_t max = 0;
+    std::vector<Location>::iterator ite = server.getLocations().end();
 
-    while (tmp != server.getLocations().end())
+
+    // /gym/   ite = /     it = /gym/
+    // /       ite = /     it = it.end()
+    // /srcs   ite = /     it = it.end()
+    // /       ite = ite.end()     it = it.end()
+    while (it != server.getLocations().end())
     {
-        if (last_char_pos(req.getPath(), tmp->getLocationPath()) > max)
+        if (req.getPath().find(it->getLocationPath()) != std::string::npos)
         {
-            it = tmp;
-            max = last_char_pos(req.getPath(), tmp->getLocationPath());
+            if (it->getLocationPath() == "/")
+            {
+                ite = it;
+                it++;
+                continue ;
+            }
+            else
+                break ;
         }
-        tmp++;
+        it++;
     }
-    if (max == 0)
+    if (it == server.getLocations().end() && ite == server.getLocations().end())
     {
         _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
         _resp.second = 84;
         return ;
     }
+    else if (it == server.getLocations().end() && ite != server.getLocations().end())
+        it = ite;
+    std::cout << "it = " << it->getLocationPath() << " == " << req.getPath() << std::endl;
     if (it->getRedirection().first != "")
     {
         _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + it->getRedirection().first + "\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
@@ -338,6 +350,7 @@ void  Response::prepare_response(Request & req, Server & server)
     }
     if (req.getMethod() == "GET")
     {
+        std::cout << "Dkhaeeel" << std::endl;
         HandleGet(req, *it);
     }
     else if (req.getMethod() == "POST")

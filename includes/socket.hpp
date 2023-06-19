@@ -33,8 +33,9 @@ class Socket{
         Response resp;
         Request req;
         int close_conn;
+        int already_bind;
     public:
-        Socket();
+        Socket() ;
         Socket(int s_fd, struct sockaddr_in address);
         ~Socket();
         
@@ -42,6 +43,7 @@ class Socket{
         
         Response &get_Resp();
         Request &getReq();
+        int getAlready_bind();
         int getClose_conn();
         int getSocket_fd();
         
@@ -50,6 +52,7 @@ class Socket{
         
         void setClose_conn(const int close_conn);
         void setSocket_fd(int &socket_fd);
+        void setAlreadyBind(int already_bind);
         void setResp(Response &resp);
         void setReq(Request &req);
         void create_sockets(int port);

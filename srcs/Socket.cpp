@@ -1,7 +1,7 @@
 
 #include "../includes/socket.hpp"
 
-Socket::Socket() : s_fd(0), close_conn(0), resp(Response()), req(Request()), address()
+Socket::Socket() : s_fd(0), close_conn(0), resp(Response()), req(Request()), address(), already_bind(0)
 {
     
 }
@@ -37,6 +37,11 @@ Socket & Socket::operator=(const Socket &sock)
 void Socket::setClose_conn(const int close_conn)
 {
     this->close_conn = close_conn;
+}
+
+int Socket::getAlready_bind()
+{
+    return already_bind;
 }
 
 void Socket::setResp(Response &resp)
@@ -88,6 +93,11 @@ void Socket::setSocket_fd(int &socket_fd)
     s_fd = socket_fd;
 }
 
+void Socket::setAlreadyBind(int already_bind)
+{
+    this->already_bind = already_bind;
+}
+
 void    Socket::create_sockets(int port)
 {
     address = this->init_Sockadd(port);
@@ -106,8 +116,11 @@ void    Socket::create_sockets(int port)
     memset(address.sin_zero, '\0', sizeof address.sin_zero);
     if (bind(s_fd, (struct sockaddr *)&address, sizeof(address))<0) 
     {
+
         perror("In bind");
-        exit(EXIT_FAILURE);
+        already_bind = 1;
+        return;
+        // exit(EXIT_FAILURE);
     }
     if (listen(s_fd, MAXNAMLEN) < 0) 
     {

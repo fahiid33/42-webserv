@@ -1,5 +1,9 @@
 #include "../includes/Multiplexing.hpp"
 
+const char* RED = "\033[31m";
+const char* GREEN = "\033[32m";
+const char* YELLOW = "\033[33m";
+
 MultiPlexing::MultiPlexing()
 {
     // initialize IO
@@ -151,10 +155,17 @@ void MultiPlexing::setup_server(std::vector<Server> &servers)
     {
         sock = servers[i].getServerSocket();
         sock.create_sockets(servers[i].getPort());
+        if (sock.getAlready_bind())
+        {
+            sock.setAlreadyBind(0);
+            servers.erase(servers.begin() + i);
+            i--;
+            continue;
+        }
         servers[i].setServerSocket(sock);
         max_sd = servers[i].getServerFd();
         FD_SET(servers[i].getServerFd(), &io.readfds);
-        std::cout << "port: " << servers[i].getPort() << " " << max_sd << std::endl;
+        std::cout << "port: " << servers[i].getPort() << " binded " << max_sd << std::endl;
     }
     while (1)
     {

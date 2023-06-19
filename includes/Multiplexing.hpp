@@ -28,10 +28,6 @@
 #include "request.hpp"
 #include "response.hpp"
 
-constexpr const char* RED = "\033[31m";
-constexpr const char* GREEN = "\033[32m";
-constexpr const char* YELLOW = "\033[33m";
-
 typedef struct IOsets
 {
     fd_set readfds;
