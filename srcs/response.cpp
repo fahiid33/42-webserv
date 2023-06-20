@@ -238,7 +238,6 @@ void Response::HandlePost(Request &req, Location &loc)
     // out.close();
     // std::cout << "here" << std::endl;
     // remove(req.get_body().c_str());
-    // set_status_code(201);
     std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
     if (file_exists(request_resource.c_str()))
     {
