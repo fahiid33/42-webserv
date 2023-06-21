@@ -4,6 +4,35 @@
 Request::Request()
 {
     this->request = "";
+    this->content_length = -1;
+    this->tr_enc = "";
+    this->method = "";
+    this->path = "";
+    this->version = "";
+    this->host = "";
+    this->file = "";
+    this->body = "";
+    this->conn = "";
+    this->timeOut = -1;
+    this->keepAlive = false;
+    this->started = 0;
+}
+
+void Request::clear()
+{
+    this->request = "";
+    this->content_length = -1;
+    this->tr_enc = "";
+    this->method = "";
+    this->path = "";
+    this->version = "";
+    this->host = "";
+    this->file = "";
+    this->keepAlive = false;
+    this->body = "";
+    this->conn = "";
+    this->started = 0;
+    this->timeOut = -1;
 }
 
 Request::Request(const Request &req)
@@ -13,10 +42,14 @@ Request::Request(const Request &req)
     this->tr_enc = req.tr_enc;
     this->method = req.method;
     this->path = req.path;
+    this->body = req.body;
     this->version = req.version;
     this->host = req.host;
+    this->keepAlive = req.keepAlive;
+    this->timeOut = req.timeOut;
     this->file = req.file;
     this->conn = req.conn;
+    this->started = req.started;
 }
 
 Request &Request::operator=(const Request &req)
@@ -24,12 +57,16 @@ Request &Request::operator=(const Request &req)
     this->request = req.request;
     this->content_length = req.content_length;
     this->tr_enc = req.tr_enc;
+    this->body = req.body;
     this->method = req.method;
     this->path = req.path;
+    this->timeOut = req.timeOut;
     this->version = req.version;
     this->host = req.host;
     this->file = req.file;
+    this->keepAlive = req.keepAlive;
     this->conn = req.conn;
+    this->started = req.started;
     return *this;
 }
 
@@ -39,12 +76,8 @@ Request::Request(std::string request)
     std::istringstream file;
     std::string line;
 
+    this->clear();
     this->request = request;
-    content_length = -1;
-    tr_enc = "";
-    method = "";
-    path = "";
-    version = "";
     file.str(request);
     std::getline(file, line);
     iss.str(line);
@@ -75,6 +108,8 @@ Request::Request(std::string request)
                 iss >> conn;
                 if (iss >> conn)
                     throw std::invalid_argument("Invalid request");
+                else if (conn == "keep-alive")
+                    keepAlive = true;
             }
             if (line == "Content-Length:")
             {
@@ -90,23 +125,35 @@ Request::Request(std::string request)
                 else if (tr_enc != "chunked")
                     throw std::invalid_argument("Invalid request");
             }
+            if (line == "Keep-Alive:")
+            {
+                // std::string chk("");
+                std::getline(iss, line , '=');
+                if (line != "timeout"){
+                    throw std::invalid_argument("Invalid request");
+                }
+                else if(!(iss >> timeOut) || timeOut < 0){
+                    throw std::invalid_argument("Invalid request");
+                }
+            }
         }
     }
     if ((method != "GET" && method != "POST" && method != "DELETE") || version != "HTTP/1.1")
         throw std::invalid_argument("Invalid request");
     if (method == "POST" && content_length == -1 && tr_enc == "")
             throw std::invalid_argument("Invalid request");
-    if (strlen(strstr(request.c_str(), "\r\n\r\n") ? strstr(request.c_str(), "\r\n\r\n")  : "a") - 4 > 100 )
-    {
-            throw std::invalid_argument("Invalid request");
-    }
-    this->body = this->request.substr(this->request.find("\r\n\r\n") + 4, this->request.length() - 1);
+    // if (strlen(strstr(request.c_str(), "\r\n\r\n") ? strstr(request.c_str(), "\r\n\r\n")  : "a") - 4 > 100 )
+    // {
+    //         throw std::invalid_argument("Invalid request");
+    // }
+    // this->body = this->request.substr(this->request.find("\r\n\r\n") + 4, this->request.length() - 1);
     
     
 }
 
 Request::~Request()
 {
+    this->clear();
 }
 
 std::string Request::getPath()
@@ -119,6 +166,11 @@ std::string Request::getMethod()
     return this->method;
 }
 
+time_t Request::getStarted()
+{
+    return this->started;
+}
+
 std::string Request::getVersion()
 {
     return this->version;
@@ -129,14 +181,20 @@ std::string Request::getHost()
     return this->host;
 }
 
+time_t Request::getTimeOut()
+{
+    return this->timeOut;
+}
+
+
 std::string Request::getFile()
 {
     return this->file;
 }
 
-std::string Request::getConn()
+bool Request::getConn()
 {
-    return this->conn;
+    return this->keepAlive;
 }
 
 std::string Request::getTr_enc()

@@ -82,10 +82,14 @@ void MultiPlexing::handleWriteData(Socket &sock)
             if (sock.get_Resp().getFd() < 0)
             {
                 perror("open");
-                sock.setClose_conn(1);
+                sock.setWrite_done(1);
                 return ;
             }
             sock.get_Resp().setIsOpen(1);
+        }
+        else
+        {
+            sock.setWrite_done(1);
         }
         return ;
     }
@@ -95,7 +99,7 @@ void MultiPlexing::handleWriteData(Socket &sock)
         rc = write(sock.getSocket_fd() , buffer , sock.get_Resp().getResp().second - sock.get_Resp().getOffset());
         sock.get_Resp().setOffset(sock.get_Resp().getOffset() + rc);
         std::cout << GREEN << "file " << sock.get_Resp().getFile() << " done" << std::endl;
-        sock.setClose_conn(1);
+        sock.setWrite_done(1);
     }
     else if (sock.get_Resp().getFile() != "")
     {
@@ -107,7 +111,7 @@ void MultiPlexing::handleWriteData(Socket &sock)
     if (rc < 0)
     {
         perror("  write() failed");
-        sock.setClose_conn(1);
+        sock.setWrite_done(1);
         return ;
     }
 
@@ -130,31 +134,31 @@ void    MultiPlexing::handleNewConnection(Server & server, std::vector<std::pair
         }
         // break;
     }
-    // std::cout << "Connection accepted" << std::endl;
+    std::cout << "Connection accepted" << std::endl;
     if ((fcntl(new_socket, F_SETFL, O_NONBLOCK)) <  0)
     {
         perror("In fcntl");
         exit(EXIT_FAILURE);
     }
-    // std::cout << "new_socket = " << new_socket << std::endl;
+    std::cout << "new_socket = " << new_socket << std::endl;
     FD_SET(new_socket, &io.readfds);
     if (new_socket > max_sd)
         max_sd = new_socket;
     clients.push_back(std::make_pair(Socket(new_socket, address), server));
 }
 
-void MultiPlexing::setup_server(std::vector<Server> &servers) 
+void MultiPlexing::setup_server(std::vector<Server>& servers)
 {
     Socket sock;
-    int new_socket;
-    int desc_ready, close_conn = 0;
-    std::vector<std::pair <Socket, Server> > clients;
     int rc;
+    std::vector<std::pair<Socket, Server>> clients;
 
+    time_t keep_alive_timeout = 10;
     for (int i = 0; i < servers.size(); i++)
     {
         sock = servers[i].getServerSocket();
         sock.create_sockets(servers[i].getPort());
+
         if (sock.getAlready_bind())
         {
             sock.setAlreadyBind(0);
@@ -162,11 +166,13 @@ void MultiPlexing::setup_server(std::vector<Server> &servers)
             i--;
             continue;
         }
+
         servers[i].setServerSocket(sock);
         max_sd = servers[i].getServerFd();
         FD_SET(servers[i].getServerFd(), &io.readfds);
         std::cout << "port: " << servers[i].getPort() << " binded " << max_sd << std::endl;
     }
+
     while (1)
     {
         struct timeval timeout;
@@ -174,26 +180,39 @@ void MultiPlexing::setup_server(std::vector<Server> &servers)
         timeout.tv_usec = 0;
         memcpy(&io.read_cpy, &io.readfds, sizeof(io.readfds));
         memcpy(&io.write_cpy, &io.writefds, sizeof(io.writefds));
-        if ((rc = select(max_sd + 1, &io.read_cpy, &io.write_cpy, NULL, &timeout)) < 0) {
+
+        if ((rc = select(max_sd + 1, &io.read_cpy, &io.write_cpy, NULL, &timeout)) < 0)
+        {
             perror("select() failed");
             exit(EXIT_FAILURE);
         }
         if (rc == 0)
         {
-            // printf("select() timed out.  End program.\n");
+            for (int i = 0; i < clients.size(); i++)
+            {
+                if (clients[i].first.getClose_conn() || (clients[i].first.getReq().getConn() && (time(NULL) - clients[i].first.getReq().getStarted() >= clients[i].first.getReq().getTimeOut()) && clients[i].first.getWrite_done()))
+                {
+                    std::cout << "clian sala mn read" << std::endl;
+                    FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
+                    close(clients[i].first.getSocket_fd());
+                    clients[i].first.clear();
+                    clients.erase(clients.begin() + i);
+                    i--;
+                }
+            }
+            printf("select() timed out.  End program.\n");
             continue;
         }
-
+        // Check for new connections
         for (int j = 0; j < servers.size(); j++)
         {
             if (FD_ISSET(servers[j].getServerFd(), &io.read_cpy))
+            {
                 handleNewConnection(servers[j], clients);
+            }
         }
-        // if (servers[j].getEndServer())
-        // {
-        //     close(servers[j].getServerFd());
-        //     servers.erase(servers.begin() + j);
-        // }
+
+        // Handle client I/O
         for (int i = 0; i < clients.size(); i++)
         {
             if (FD_ISSET(clients[i].first.getSocket_fd(), &io.read_cpy))
@@ -202,34 +221,33 @@ void MultiPlexing::setup_server(std::vector<Server> &servers)
                 if (!clients[i].first.getClose_conn())
                 {
                     FD_SET(clients[i].first.getSocket_fd(), &io.writefds);
-                    FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
-                }
-                else
-                {
-                    FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
-                    close(clients[i].first.getSocket_fd());
-                    close(clients[i].first.get_Resp().getFd());
-                    clients[i].first.setClose_conn(0);
-                    clients.erase(clients.begin() + i);
-                    i--;
                 }
             }
-        }
-        for (int i = 0; i < clients.size(); i++)
-        {
-            if (FD_ISSET(clients[i].first.getSocket_fd(), &io.write_cpy)) 
+
+            if (FD_ISSET(clients[i].first.getSocket_fd(), &io.write_cpy))
             {
+                std::cout << "ktbnaha " << clients[i].first.getSocket_fd() << std::endl;
                 handleWriteData(clients[i].first);
-                if (clients[i].first.getClose_conn())
-                {
-                    std::cout << YELLOW << "yes dead " << clients[i].first.get_Resp().getFile() << std::endl;
-                    FD_CLR(clients[i].first.getSocket_fd(), &io.writefds);
-                    close(clients[i].first.getSocket_fd());
+            }
+            if (clients[i].first.getWrite_done())
+            {
+                std::cout << "salat lktba " << clients[i].first.getSocket_fd() << std::endl;
+                clients[i].first.setWrite_done(0);
+                FD_CLR(clients[i].first.getSocket_fd(), &io.writefds);
+                if (clients[i].first.get_Resp().getFile() != "")
                     close(clients[i].first.get_Resp().getFd());
-                    clients[i].first.setClose_conn(0);
-                    clients.erase(clients.begin() + i);
-                    i--;
-                }
+                clients[i].first.get_Resp().clear();
+            }
+            if (clients[i].first.getClose_conn())
+            {
+                std::cout << "connection closed" << std::endl;
+                FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
+                close(clients[i].first.getSocket_fd());
+                if (clients[i].first.get_Resp().getFile() != "" && clients[i].first.get_Resp().getFd() > 0)
+                    close(clients[i].first.get_Resp().getFd());
+                clients[i].first.clear();
+                clients.erase(clients.begin() + i);
+                i--;
             }
         }
     }
