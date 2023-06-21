@@ -1,37 +1,61 @@
 
 #include "../includes/socket.hpp"
 
-Socket::Socket() : s_fd(0), close_conn(0), resp(Response()), req(Request()), address(), already_bind(0)
+Socket::Socket() : s_fd(0), close_conn(0), resp(Response()), req(Request()), address(), already_bind(0), write_done(0)
 {
-    
 }
 
 Socket::Socket(int s_fd, sockaddr_in address)
 {
+    this->write_done = 0;
+    this->already_bind = 0;
     this->s_fd = s_fd;
     this->close_conn = 0;
     this->address = address;
+    this->resp = Response();
+    this->req = Request();
 }
 
 Socket::~Socket()
 {
-    struct sockaddr_in  _sockaddr;
-    Response resp;
-    Request req;
+    this->write_done = 0;
     this->close_conn = 0;
+    this->already_bind = 0;
     this->s_fd = 0;
-    this->address = _sockaddr;
-    this->resp = resp;
-    this->req = req;
+    this->resp.clear();
+    this->req.clear();
+}
+
+void Socket::clear()
+{
+    this->write_done = 0;
+    this->close_conn = 0;
+    this->already_bind = 0;
+    this->s_fd = 0;
+    this->resp.clear();
+    this->req.clear();
 }
 
 Socket & Socket::operator=(const Socket &sock)
 {
+    this->write_done = sock.write_done;
+    this->close_conn = sock.close_conn;
+    this->already_bind = sock.already_bind;
     this->s_fd = sock.s_fd;
     this->address = sock.address;
     this->resp = sock.resp;
     this->req = sock.req;
     return *this;
+}
+
+void Socket::setWrite_done(int d)
+{
+    this->write_done = d;
+}
+
+int Socket::getWrite_done()
+{
+    return this->write_done;
 }
 
 void Socket::setClose_conn(const int close_conn)
@@ -44,7 +68,7 @@ int Socket::getAlready_bind()
     return already_bind;
 }
 
-void Socket::setResp(Response &resp)
+void Socket::setResp(Response const &resp)
 {
     this->resp = resp;
 }

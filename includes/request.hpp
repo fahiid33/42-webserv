@@ -26,10 +26,13 @@
 class Request {
     
     private:
+        time_t      started;
         std::string request;
         std::string method;
         std::string path;
         std::string file;
+        bool        keepAlive;
+        time_t      timeOut;
         std::string version;
         std::string host;
         std::string conn;
@@ -43,13 +46,16 @@ class Request {
         Request(std::string request);
         ~Request();
         Request &operator=(const Request &request);
-        
+        time_t getStarted();
         std::string getMethod();
         std::string getPath();
+
         std::string getVersion();
         std::string getHost();
         std::string getFile();
-        std::string getConn();
+        time_t      getTimeOut();
+        bool        getConn();
+        void        clear();
         int         getContent_length();
         std::string getTr_enc();
         std::string getRequest();

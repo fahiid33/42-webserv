@@ -2,9 +2,13 @@
 #include "../includes/response.hpp"
 #include "../includes/server.hpp"
 
-Response::Response() : _offset(0), fd(0), is_open(0) {}
+Response::Response() : _offset(0), fd(0), is_open(0), _content_type(""), file(""), _resp(std::make_pair("", 0)) {
+    mime_types = mime_types_init();
+}
 
-Response::~Response() {}
+Response::~Response() {
+    this->clear();
+}
 
 Response::Response(const Response &resp)
 {
@@ -13,6 +17,8 @@ Response::Response(const Response &resp)
     this->is_open = resp.is_open;
     this->file = resp.file;
     this->_resp = resp._resp;
+    this->_content_type = resp._content_type;
+    this->mime_types = resp.mime_types;
 }
 
 Response & Response::operator=(const Response &resp)
@@ -22,7 +28,19 @@ Response & Response::operator=(const Response &resp)
     this->is_open = resp.is_open;
     this->file = resp.file;
     this->_resp = resp._resp;
+    this->mime_types = resp.mime_types;
+    this->_content_type = resp._content_type;
     return *this;
+}
+
+void Response::clear()
+{
+    this->_offset = 0;
+    this->fd = 0;
+    this->is_open = 0;
+    this->file = "";
+    this->_resp = std::make_pair("", 0);
+    this->_content_type = "";
 }
 
 size_t last_char_pos(std::string str, std::string str2)
