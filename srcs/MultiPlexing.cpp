@@ -27,6 +27,24 @@ void MultiPlexing::setMaxSd(int max_sd)
     this->max_sd = max_sd;
 }
 
+const MultiPlexing::Clients & MultiPlexing::getCLients() const
+{
+    return clients;
+}
+
+void    MultiPlexing::setClients(Clients & client)
+{
+    clients = client;
+}
+
+void    MultiPlexing::addClient(int sock, struct sockaddr_in address, Server & server)
+{
+    // Clients clients;
+    this->clients.push_back(std::make_pair(Socket(sock, address), server));
+    // setClients(clients);
+}
+
+
 void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
 {
     char buffer[40000];
@@ -179,7 +197,7 @@ void MultiPlexing::handleWriteData(Socket &sock)
 }
 
 
-void    MultiPlexing::handleNewConnection(Server & server, std::vector<std::pair <Socket, Server> > & clients)
+void    MultiPlexing::handleNewConnection(Server & server, Clients & clients)
 {
     int new_socket;
     struct sockaddr_in address = server.getServerSocket().getAddress();
@@ -205,14 +223,14 @@ void    MultiPlexing::handleNewConnection(Server & server, std::vector<std::pair
     FD_SET(new_socket, &io.readfds);
     if (new_socket > max_sd)
         max_sd = new_socket;
+    // this->addClient(new_socket, address, server);
     clients.push_back(std::make_pair(Socket(new_socket, address), server));
+
 }
 
-void MultiPlexing::setup_server(std::vector<Server>& servers)
+void    MultiPlexing::CreateServerSockets(std::vector<Server>& servers)
 {
     Socket sock;
-    int rc;
-    std::vector< std::pair<Socket, Server> > clients;
 
     for (int i = 0; i < servers.size(); i++)
     {
@@ -230,9 +248,15 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
         servers[i].setServerSocket(sock);
         max_sd = servers[i].getServerFd();
         FD_SET(servers[i].getServerFd(), &io.readfds);
-        std::cout << "port: " << servers[i].getPort() << " binded " << max_sd << std::endl;
     }
+}
 
+void MultiPlexing::setup_server(std::vector<Server>& servers)
+{
+    int rc;
+    Clients clients;
+
+    CreateServerSockets(servers);
     while (1)
     {
         struct timeval timeout;
@@ -271,11 +295,8 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
         for (int j = 0; j < servers.size(); j++)
         {
             if (FD_ISSET(servers[j].getServerFd(), &io.read_cpy))
-            {
                 handleNewConnection(servers[j], clients);
-            }
         }
-
         // Handle client I/O
         for (int i = 0; i < clients.size(); i++)
         {
@@ -290,9 +311,7 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
             }
 
             if (FD_ISSET(clients[i].first.getSocket_fd(), &io.write_cpy))
-            {
                 handleWriteData(clients[i].first);
-            }
             if (clients[i].first.getWrite_done())
             {
                 // std::cout << "salat lktba " << clients[i].first.getSocket_fd() << std::endl;

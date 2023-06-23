@@ -38,20 +38,29 @@ typedef struct IOsets
 
 class MultiPlexing
 {
-    Server server;
-    IOsets io;
-    int max_sd;
+    public :
+        typedef std::vector< std::pair<Socket, Server> > Clients;
+    private :
+        Server server;
+        IOsets io;
+        MultiPlexing::Clients clients;
+        int max_sd;
 
 
-public:
-    MultiPlexing();
-    ~MultiPlexing();
+    public:
+        MultiPlexing();
+        ~MultiPlexing();
 
-    void setup_server(std::vector<Server> &servers);
-    int getMaxSd();
-    void setMaxSd(int max_sd);
-    void handleNewConnection(Server & server, std::vector<std::pair <Socket, Server> > & clients);
+        void setup_server(std::vector<Server> &servers);
+        int  getMaxSd();
+        void setMaxSd(int max_sd);
+        void handleNewConnection(Server & server, std::vector<std::pair <Socket, Server> > & clients);
 
-    void handleReadData(std::pair <Socket, Server> &);
-    void handleWriteData(Socket &sock);
+        const MultiPlexing::Clients & getCLients() const;
+
+        void addClient(int sock, struct sockaddr_in address,Server & server);
+        void    CreateServerSockets(std::vector<Server>& servers);  
+        void setClients(Clients & client);
+        void handleReadData(std::pair <Socket, Server> &);
+        void handleWriteData(Socket &sock);
 };
