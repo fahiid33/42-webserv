@@ -13,9 +13,9 @@ Request::Request()
     this->file = "";
     this->body = "";
     this->conn = "";
-    this->timeOut = -1;
-    this->keepAlive = false;
-    this->started = 0;
+    this->timeOut = 8;
+    this->keepAlive = true;
+    this->started = time(NULL);
 }
 
 void Request::clear()
@@ -28,11 +28,11 @@ void Request::clear()
     this->version = "";
     this->host = "";
     this->file = "";
-    this->keepAlive = false;
+    this->keepAlive = true;
     this->body = "";
     this->conn = "";
-    this->started = 0;
-    this->timeOut = -1;
+    this->started = time(NULL);
+    this->timeOut = 8;
 }
 
 Request::Request(const Request &req)
@@ -78,16 +78,17 @@ Request::Request(std::string request)
 
     this->clear();
     this->request = request;
+    std::cout << request << std::endl;
     file.str(request);
     std::getline(file, line);
     iss.str(line);
     iss >> method >> path >> version;
     if(iss >> version)
-        throw std::invalid_argument("Invalid request");
+        throw std::invalid_argument("0");
     if (path.size() > 2048)
-        throw std::invalid_argument("Invalid request");
+        throw std::invalid_argument("0");
     if (path.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%") != std::string::npos)
-        throw std::invalid_argument("Invalid request");
+        throw std::invalid_argument("0");
     this->file = path.substr(path.find_last_of('/') + 1, path.length() - 1);
     this->path = path.substr(0, path.find_last_of('/') + 1);
     // std::cout << request << std::endl;
@@ -101,13 +102,13 @@ Request::Request(std::string request)
             {
                 iss >> host;
                 if (iss >> host)
-                    throw std::invalid_argument("Invalid request");
+                    throw std::invalid_argument("1");
             }
             if (line == "Connection:")
             {
                 iss >> conn;
                 if (iss >> conn)
-                    throw std::invalid_argument("Invalid request");
+                    throw std::invalid_argument("2");
                 else if (conn == "keep-alive")
                     keepAlive = true;
             }
@@ -115,40 +116,50 @@ Request::Request(std::string request)
             {
                 iss >> content_length;
                 if (iss >> content_length)
-                    throw std::invalid_argument("Invalid request");
+                    throw std::invalid_argument("3");
             }
             if (line == "Transfer-Encoding:")
             {
                 iss >> tr_enc;
                 if (iss >> tr_enc)
-                    throw std::invalid_argument("Invalid request");
+                    throw std::invalid_argument("4");
                 else if (tr_enc != "chunked")
-                    throw std::invalid_argument("Invalid request");
+                    throw std::invalid_argument("5");
             }
             if (line == "Keep-Alive:")
             {
                 // std::string chk("");
                 std::getline(iss, line , '=');
                 if (line != "timeout"){
-                    throw std::invalid_argument("Invalid request");
+                    throw std::invalid_argument("6");
                 }
                 else if(!(iss >> timeOut) || timeOut < 0){
-                    throw std::invalid_argument("Invalid request");
+                    throw std::invalid_argument("7");
                 }
             }
         }
     }
-    if ((method != "GET" && method != "POST" && method != "DELETE") || version != "HTTP/1.1")
-        throw std::invalid_argument("Invalid request");
+    if ((method != "GET" && method != "POST" && method != "Post" && method != "DELETE") || version != "HTTP/1.1")
+    {
+        std::cout << "method: " << method << std::endl;
+        throw std::invalid_argument("8");
+    }
     if (method == "POST" && content_length == -1 && tr_enc == "")
-            throw std::invalid_argument("Invalid request");
-    // if (strlen(strstr(request.c_str(), "\r\n\r\n") ? strstr(request.c_str(), "\r\n\r\n")  : "a") - 4 > 100 )
+            throw std::invalid_argument("9");
+    if (keepAlive && timeOut == -1)
+    {
+        started = time(NULL);
+    }
+    // std::string body = request.substr(request.find("\r\n\r\n") + 4, request.length() - 1);
+    // i(body.c_str()) > 100 )
     // {
     //         throw std::invalid_argument("Invalid request");
     // }
-    // this->body = this->request.substr(this->request.find("\r\n\r\n") + 4, this->request.length() - 1);
-    
-    
+    // bool flag = (*(request.end() - 1) == '\n' && *(request.end() - 2) == '\r' && *(request.end() - 3) == '\n' && *(request.end() - 4) == '\r');
+    // if (!flag)
+    //     throw std::invalid_argument("Invalid request");
+    // else
+    //     this->body = body;
 }
 
 Request::~Request()

@@ -36,7 +36,7 @@ Response & Response::operator=(const Response &resp)
 void Response::clear()
 {
     this->_offset = 0;
-    this->fd = 0;
+    this->fd = -1;
     this->is_open = 0;
     this->file = "";
     this->_resp = std::make_pair("", 0);
@@ -176,14 +176,14 @@ void    Response::auto_indexing(const char *dir)
 void Response::HandleGet(Request &req, Location &loc)
 {
     std::map<std::string, std::string> mimeTypes = mime_types_init();
-    std::string contentType = getContentType(req.getFile(), mimeTypes);
+    std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
+    std::string contentType = getContentType(request_resource, mimeTypes);
     std::vector<std::string>::iterator it;
 
     _resp.first = "HTTP/1.1 200 OK\nContent-Type: ";
     _resp.first += contentType;
     std::ifstream file;
-    std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
-    std::cout << "request_resource: " << request_resource << std::endl;
+    // std::cout << "request_resource: " << request_resource << std::endl;
     if (!file_exists(request_resource.c_str()))
     {
         _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
@@ -195,7 +195,10 @@ void Response::HandleGet(Request &req, Location &loc)
         // check if request_resource has / at the end
         if (request_resource[request_resource.length() - 1] != '/')
         {
-            _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + req.getPath() + req.getFile() + "/\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
+            // _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + req.getPath() + req.getFile() + "/\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
+            // _resp.second = 84;
+            // return ;
+            _resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 13\n\n403 forbidden";
             _resp.second = 84;
             return ;
         }
@@ -257,12 +260,15 @@ void Response::HandlePost(Request &req, Location &loc)
     // std::cout << "here" << std::endl;
     // remove(req.get_body().c_str());
     std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
-    if (file_exists(request_resource.c_str()))
-    {
-        _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
-        _resp.second = 84;
-        return ;
-    }
+    
+    // just doing some tests khliha commented
+    
+    // if (file_exists(request_resource.c_str()))
+    // {
+    //     _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
+    //     _resp.second = 84;
+    //     return ;
+    // }
     std::vector<std::string>::iterator it;
     if (isDirectory(request_resource.c_str()))
     {
@@ -406,7 +412,7 @@ void  Response::prepare_response(Request & req, Server & server)
     }
     else if (it == server.getLocations().end() && ite != server.getLocations().end())
         it = ite;
-    std::cout << "it = " << it->getLocationPath() << " == " << req.getPath() << std::endl;
+    std::cout << "\033[33m" << "location = " << it->getLocationPath() << " for req path " << req.getPath() << std::endl;
     if (it->getRedirection().first != "")
     {
         _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + it->getRedirection().first + "\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
@@ -421,7 +427,6 @@ void  Response::prepare_response(Request & req, Server & server)
     }
     if (req.getMethod() == "GET")
     {
-
         HandleGet(req, *it);
     }
     else if (req.getMethod() == "POST")

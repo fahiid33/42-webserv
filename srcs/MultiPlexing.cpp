@@ -44,7 +44,7 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
     
     if (rc == 0) 
     {
-        std::cout << "  Connection closed" << std::endl;
+        // std::cout << "  Connection closed" << std::endl;
         client.first.setClose_conn(1);
         return ;
     }
@@ -54,14 +54,62 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
     try
     {
         Request req(str);
+        client.first.setReq(req);
         client.first.get_Resp().prepare_response(req, client.second);
         // requested the file
         std::cout << RED << "file: " << client.first.get_Resp().getFile() << std::endl;
     }
     catch(const std::exception& e)
     {
-        std::cerr << e.what() << '\n';
-        exit(1);
+        if(!strcmp(e.what(), "0"))
+        {
+            client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 404 Bad Request\r\n\r\n", 32));
+        }
+        else if(!strcmp(e.what(), "1"))
+        {
+            client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 414 Request-URI Too Long\r\n\r\n", 41));
+        }
+        else if(!strcmp(e.what(), "2"))
+        {
+            client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 403 Bad Request\r\n\r\n", 32));
+        }
+        else if(!strcmp(e.what(), "3"))
+        {
+            client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 405 Method Not Allowed\r\n\r\n", 39));
+        }
+        else if(!strcmp(e.what(), "4"))
+        {
+            client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 505 HTTP Version Not Supported\r\n\r\n", 47));
+        }
+        else if(!strcmp(e.what(), "5"))
+        {
+            client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 501 Not Implemented\r\n\r\n", 36));
+        }
+        else if(!strcmp(e.what(), "6"))
+        {
+            client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 500 Internal Server Error\r\n\r\n", 42));
+        }
+        else if(!strcmp(e.what(), "7"))
+        {
+            client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 411 Length Required\r\n\r\n", 36));
+        }
+        else if(!strcmp(e.what(), "8"))
+        {
+            client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 405 method not allowed\r\n\r\n", 39));
+        }
+        else if(!strcmp(e.what(), "9"))
+        {
+            client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 402 Bad Request\r\n\r\n", 32));
+        }
+        else if(!strcmp(e.what(), "10"))
+        {
+            client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 401 Bad Request\r\n\r\n", 32));
+        }
+        else
+        {
+            std::cout << "baaad " << e.what() << std::endl;
+            exit(0);
+        }
     }   
 }
 
@@ -91,6 +139,7 @@ void MultiPlexing::handleWriteData(Socket &sock)
         {
             sock.setWrite_done(1);
         }
+        std::cout << GREEN << "response header : " << sock.get_Resp().getResp().first << std::endl;
         return ;
     }
     if ((sock.get_Resp().getOffset() + 1024) > sock.get_Resp().getResp().second && sock.get_Resp().getFile() != "")
@@ -107,7 +156,6 @@ void MultiPlexing::handleWriteData(Socket &sock)
         rc = write(sock.getSocket_fd() , buffer, 1024);
         sock.get_Resp().setOffset(sock.get_Resp().getOffset() + rc);
     }
-    
     if (rc < 0)
     {
         perror("  write() failed");
@@ -134,7 +182,7 @@ void    MultiPlexing::handleNewConnection(Server & server, std::vector<std::pair
         }
         // break;
     }
-    std::cout << "Connection accepted" << std::endl;
+    // std::cout << "Connection accepted" << std::endl;
     if ((fcntl(new_socket, F_SETFL, O_NONBLOCK)) <  0)
     {
         perror("In fcntl");
@@ -151,9 +199,8 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
 {
     Socket sock;
     int rc;
-    std::vector<std::pair<Socket, Server>> clients;
+    std::vector< std::pair<Socket, Server> > clients;
 
-    time_t keep_alive_timeout = 10;
     for (int i = 0; i < servers.size(); i++)
     {
         sock = servers[i].getServerSocket();
@@ -190,10 +237,14 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
         {
             for (int i = 0; i < clients.size(); i++)
             {
-                if (clients[i].first.getClose_conn() || (clients[i].first.getReq().getConn() && (time(NULL) - clients[i].first.getReq().getStarted() >= clients[i].first.getReq().getTimeOut()) && clients[i].first.getWrite_done()))
+                std::cout << clients[i].first.getReq().getConn() << time(NULL) << clients[i].first.getReq().getStarted() << clients[i].first.getReq().getTimeOut() << std::endl;
+                if ((clients[i].first.getClose_conn() || (clients[i].first.getReq().getConn() && (time(NULL) - clients[i].first.getReq().getStarted() >= clients[i].first.getReq().getTimeOut()))))
                 {
-                    std::cout << "clian sala mn read" << std::endl;
+                    // std::cout << "clian sala mn read" << std::endl;
+                    // remove the socket fd from the sets : handle error "bad file descriptor"
+                    FD_CLR(clients[i].first.getSocket_fd(), &io.writefds);
                     FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
+                    std::cout << RED << "close socket" << std::endl;
                     close(clients[i].first.getSocket_fd());
                     clients[i].first.clear();
                     clients.erase(clients.begin() + i);
@@ -226,25 +277,29 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
 
             if (FD_ISSET(clients[i].first.getSocket_fd(), &io.write_cpy))
             {
-                std::cout << "ktbnaha " << clients[i].first.getSocket_fd() << std::endl;
                 handleWriteData(clients[i].first);
             }
             if (clients[i].first.getWrite_done())
             {
-                std::cout << "salat lktba " << clients[i].first.getSocket_fd() << std::endl;
+                // std::cout << "salat lktba " << clients[i].first.getSocket_fd() << std::endl;
                 clients[i].first.setWrite_done(0);
                 FD_CLR(clients[i].first.getSocket_fd(), &io.writefds);
                 if (clients[i].first.get_Resp().getFile() != "")
+                {
                     close(clients[i].first.get_Resp().getFd());
+                }
                 clients[i].first.get_Resp().clear();
             }
             if (clients[i].first.getClose_conn())
             {
-                std::cout << "connection closed" << std::endl;
+                // std::cout << "connection closed" << std::endl;
                 FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
+                // std::cout << "close socket" << std::endl;
                 close(clients[i].first.getSocket_fd());
                 if (clients[i].first.get_Resp().getFile() != "" && clients[i].first.get_Resp().getFd() > 0)
+                {
                     close(clients[i].first.get_Resp().getFd());
+                }
                 clients[i].first.clear();
                 clients.erase(clients.begin() + i);
                 i--;
