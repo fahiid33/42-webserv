@@ -70,15 +70,15 @@ Request &Request::operator=(const Request &req)
     return *this;
 }
 
-Request::Request(std::string request)
+Request::Request(const char* request)
 {
     std::istringstream iss;
     std::istringstream file;
     std::string line;
 
     this->clear();
-    this->request = request;
-    std::cout << request << std::endl;
+    this->request += request;
+    // std::cout << request << std::endl;
     file.str(request);
     std::getline(file, line);
     iss.str(line);
@@ -108,7 +108,7 @@ Request::Request(std::string request)
             {
                 iss >> conn;
                 if (iss >> conn)
-                    throw std::invalid_argument("2");
+                    throw std::invalid_argument("0");
                 else if (conn == "keep-alive")
                     keepAlive = true;
             }
@@ -116,13 +116,13 @@ Request::Request(std::string request)
             {
                 iss >> content_length;
                 if (iss >> content_length)
-                    throw std::invalid_argument("3");
+                    throw std::invalid_argument("0");
             }
             if (line == "Transfer-Encoding:")
             {
                 iss >> tr_enc;
                 if (iss >> tr_enc)
-                    throw std::invalid_argument("4");
+                    throw std::invalid_argument("0");
                 else if (tr_enc != "chunked")
                     throw std::invalid_argument("5");
             }
@@ -131,10 +131,10 @@ Request::Request(std::string request)
                 // std::string chk("");
                 std::getline(iss, line , '=');
                 if (line != "timeout"){
-                    throw std::invalid_argument("6");
+                    throw std::invalid_argument("0");
                 }
                 else if(!(iss >> timeOut) || timeOut < 0){
-                    throw std::invalid_argument("7");
+                    throw std::invalid_argument("0");
                 }
             }
         }

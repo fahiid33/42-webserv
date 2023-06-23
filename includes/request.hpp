@@ -43,7 +43,7 @@ class Request {
     public:
         Request();
         Request(const Request &request);
-        Request(std::string request);
+        Request(const char* request);
         ~Request();
         Request &operator=(const Request &request);
         time_t getStarted();

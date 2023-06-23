@@ -195,12 +195,12 @@ void Response::HandleGet(Request &req, Location &loc)
         // check if request_resource has / at the end
         if (request_resource[request_resource.length() - 1] != '/')
         {
-            // _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + req.getPath() + req.getFile() + "/\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
-            // _resp.second = 84;
-            // return ;
-            _resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 13\n\n403 forbidden";
+            _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + req.getPath() + req.getFile() + "/\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
             _resp.second = 84;
             return ;
+            // _resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 13\n\n403 forbidden";
+            // _resp.second = 84;
+            // return ;
         }
         // check if request_resource has index file
         for (it = loc.getIndex().begin(); it != loc.getIndex().end(); it++)
@@ -221,7 +221,7 @@ void Response::HandleGet(Request &req, Location &loc)
             }
             else
             {
-                _resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 13\n\n403 forbidden";
+                _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 Not Found";
                 _resp.second = 84;
                 return ;
             }
@@ -376,7 +376,7 @@ std::string  Response::getContentType(const std::string& file , std::map<std::st
     }
     if (file == "")
         return "text/html";
-    return "application/octet-stream";
+    return "text/html";
 }
 
 void  Response::prepare_response(Request & req, Server & server)
@@ -389,6 +389,7 @@ void  Response::prepare_response(Request & req, Server & server)
     // /       ite = /     it = it.end()
     // /srcs   ite = /     it = it.end()
     // /       ite = ite.end()     it = it.end()
+
     while (it != server.getLocations().end())
     {
         if (req.getPath().find(it->getLocationPath()) != std::string::npos)
@@ -412,7 +413,7 @@ void  Response::prepare_response(Request & req, Server & server)
     }
     else if (it == server.getLocations().end() && ite != server.getLocations().end())
         it = ite;
-    std::cout << "\033[33m" << "location = " << it->getLocationPath() << " for req path " << req.getPath() << std::endl;
+    // std::cout << "\033[33m" << "location = " << it->getLocationPath() << " for req path " << req.getPath() << std::endl;
     if (it->getRedirection().first != "")
     {
         _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + it->getRedirection().first + "\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
@@ -437,4 +438,6 @@ void  Response::prepare_response(Request & req, Server & server)
     {
         HandleDelete(req, *it);
     }
+        std::cout << "response header : " << this->_resp.first << "00" << std::endl;
+
 }
