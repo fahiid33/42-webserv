@@ -173,7 +173,7 @@ void    Response::auto_indexing(const char *dir)
     _resp.second = resp.length();
 }
 
-void Response::HandleGet(Request &req, Location &loc)
+void Response::HandleGet(Request &req, Location &loc, Server &server)
 {
     std::map<std::string, std::string> mimeTypes = mime_types_init();
     std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
@@ -240,7 +240,7 @@ void Response::HandleGet(Request &req, Location &loc)
     // _resp.first += content + "\n";
 }
 
-void Response::HandlePost(Request &req, Location &loc)
+void Response::HandlePost(Request &req, Location &loc, Server &server)
 {
     // if location support upload
     if (loc.getClientMaxBodySize() < req.getBody().length())
@@ -288,7 +288,7 @@ void Response::HandlePost(Request &req, Location &loc)
         {
             if (file_exists((request_resource + *it).c_str()))
             {
-                if (!loc.get_cgi_path().empty())
+                if (!server.get_cgi().empty())
                 {
                      // run_cgi();
                      return ;
@@ -308,7 +308,7 @@ void Response::HandlePost(Request &req, Location &loc)
 
 }
 
-void Response::HandleDelete(Request &req, Location &loc)
+void Response::HandleDelete(Request &req, Location &loc, Server &Server)
 {
     std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
     if (!file_exists(request_resource.c_str()))
@@ -325,7 +325,7 @@ void Response::HandleDelete(Request &req, Location &loc)
             _resp.second = 82;
             return ;
         }
-        if(loc.get_cgi_path().empty())
+        if(Server.get_cgi().empty())
         {
             if(!remove(request_resource.c_str()))
             {
@@ -352,7 +352,7 @@ void Response::HandleDelete(Request &req, Location &loc)
     }
     else
     {
-       if(loc.get_cgi_path().empty())
+       if(Server.get_cgi().empty())
        {
             if(!remove(request_resource.c_str()))
             {
@@ -437,15 +437,15 @@ void  Response::prepare_response(Request & req, Server & server)
     }
     if (req.getMethod() == "GET")
     {
-        HandleGet(req, *it);
+        HandleGet(req, *it, server);
     }
     else if (req.getMethod() == "POST")
     {
-        HandlePost(req, *it);
+        HandlePost(req, *it, server);
     }
     else if (req.getMethod() == "DELETE")
     {
-        HandleDelete(req, *it);
+        HandleDelete(req, *it, server);
     }
     std::cout << "response header : " << this->_resp.first << "00" << std::endl;
 }

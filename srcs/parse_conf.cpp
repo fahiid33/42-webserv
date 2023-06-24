@@ -39,8 +39,8 @@ Location::Location()
     _uploadPath = "";
     _redirection.first = "";
     _redirection.second = "";
-    _cgi_extension.clear();
-    _cgi_path.clear();
+    // _cgi_extension.clear();
+    // _cgi_path.clear();
 
 }
 
@@ -68,14 +68,14 @@ std::string &Location::getRoot()
     return this->_root;
 }
 
-std::vector<std::string> &Location::get_cgi_path()
-{
-    return this->_cgi_path;
-}
+// std::vector<std::string> &Server::get_cgi_path()
+// {
+//     return this->_cgi_path;
+// }
 
-std::vector<std::string> &Location::get_cgi_extension()
+std::vector<std::string> &Server::get_cgi()
 {
-    return this->_cgi_extension;
+    return this->_cgi;
 }
 
 std::vector<std::string> &Location::getIndex()
@@ -170,6 +170,10 @@ void Config::parse_config()
             } else if (directive == "index") {
                 while(iss >> value)
                     currentServer.getIndex().push_back(value);
+            
+            } else if(directive == "cgi") {
+                while(iss >> value)
+                    currentServer.get_cgi().push_back(value);
             } else if (directive == "error_page") {
                 std::vector<std::pair<size_t, std::string> > errorPage;
                 while(iss >> tmp >> value)
@@ -204,16 +208,18 @@ void Config::parse_config()
                             currentLocation.setRedirection(std::make_pair (value,value1));
                         } else if(directive == "autoindex" && iss >> value) {
                             currentLocation.setAutoIndex(value == "on" ? true : false);
-                        } else if(directive == "cgi_path") {
-                            while(iss >> value)
-                                currentLocation.get_cgi_path().push_back(value);
+                        // } 
+                        // else if(directive == "cgi") {
+                        //     while(iss >> value)
+                        //         currentLocation.get_cgi_path().push_back(value);
                         }
                         else if (directive == "max_body_size" && iss >> tmp) {
                                 currentLocation.setClientMaxBodySize(tmp);
-                        } else if(directive == "cgi_ext") {
-                            while(iss >> value)
-                                currentLocation.get_cgi_extension().push_back(value);
                         }
+                        // else if(directive == "cgi") {
+                        //     while(iss >> value)
+                        //         currentLocation.get_cgi_extension().push_back(value);
+                        // }
                         else if (directive == "}") {
                             currentServer.getLocations().push_back(currentLocation);
                             currentLocation = Location();

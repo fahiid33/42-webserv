@@ -61,8 +61,8 @@ class Response
         std::string getContentType(const std::string& file , std::map<std::string, std::string>& mime_t);
         std::map<std::string, std::string> mime_types_init();
         void    auto_indexing(const char *path);
-        void    HandleGet(Request & req, Location & loc);
-        void    HandlePost(Request & req, Location & loc);
-        void    HandleDelete(Request & req, Location & loc);
+        void    HandleGet(Request & req, Location & loc, Server & server);
+        void    HandlePost(Request & req, Location & loc, Server & server);
+        void    HandleDelete(Request & req, Location & loc, Server & server);
         void    prepare_response(Request & req, Server & server);
 };

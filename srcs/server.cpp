@@ -15,6 +15,7 @@ Server::Server()
     _root = "";
     end_server = 0;
     max_sd = 0;
+    _cgi.clear();
 }
 
 Server::~Server()

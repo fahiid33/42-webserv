@@ -23,12 +23,13 @@ int main(int ac, char **av)
     {
         Config conf;
         conf.parse_config();
-        mp.setup_server(conf.getServers());
+
+        // cgi cc;
+        // mp.setup_server(conf.getServers());
         // for(int i =0; i < conf.getServers().size(); i++)
         // {
         //     conf.getServers()[i].print_server();
         // }
-        // create_socket();
     }
     return 0;
 }

@@ -35,11 +35,11 @@ class Location
         std::string                                         _root;
         std::vector<std::string>                            _index;
         bool                                                _autoIndex;
-        size_t _clientMaxBodySize;
+        size_t                                              _clientMaxBodySize;
         std::string                                         _uploadPath;
         std::pair<std::string, std::string>                 _redirection;
-        std::vector<std::string>                            _cgi_extension;     // .php
-        std::vector<std::string>                            _cgi_path;          // /usr/bin/php-cgi
+        // std::vector<std::string>                            _cgi_extension;     // .php
+        // std::vector<std::string>                            _cgi_path;          // /usr/bin/php-cgi
 
     public:
         Location();
@@ -49,8 +49,8 @@ class Location
         std::string                                         & getLocationPath();
         std::vector<std::string>                            & getAllowedMethods();
         
-        std::vector<std::string>                            & get_cgi_extension();
-        std::vector<std::string>                            & get_cgi_path();
+        // std::vector<std::string>                            & get_cgi_extension();
+        // std::vector<std::string>                            & get_cgi_path();
         std::string                                         & getRoot();
         std::vector<std::string>                            & getIndex();
         bool                                                & getAutoIndex();
@@ -81,13 +81,8 @@ class Location
                 std::cout << _index[i] << " ";
             std::cout << std::endl;
             std::cout << "autoIndex : " << _autoIndex << std::endl;
-            std::cout << "uploadPath : " << _uploadPath << std::endl << "cgi_extension : ";
-            for (size_t i = 0; i < _cgi_extension.size(); i++)
-                std::cout  << _cgi_extension[i] << " ";
-            std::cout << std::endl << "cgi_path : ";
-            for (size_t i = 0; i < _cgi_path.size(); i++)
-                std::cout << _cgi_path[i] << " "; 
-            std::cout << std::endl;
+            std::cout << "uploadPath : " << _uploadPath << std::endl;
+            // std::cout << std::endl;
             std::cout << "redirection : " << _redirection.first << " " << _redirection.second << std::endl;
             std::cout << "clientMaxBodySize : " << _clientMaxBodySize << std::endl;
         }
@@ -112,6 +107,8 @@ class Server
         std::vector<std::string> _index;
         int max_sd;
         int end_server;
+        std::vector<std::string>                            _cgi;
+        
     public:
         Server();
         ~Server();
@@ -121,6 +118,8 @@ class Server
         fd_set& getWriteCpy();
         fd_set& getWorkingSet();
         Socket & getServerSocket();
+        std::vector<std::string>                            & get_cgi();
+        // std::vector<std::string>                            & get_cgi_path();
 
         int getEndServer();
         size_t & getPort();
@@ -156,6 +155,10 @@ class Server
             std::cout << "serverNames : ";
             for (size_t i = 0; i < _serverNames.size(); i++)
                 std::cout << _serverNames[i] << " ";
+            std::cout << std::endl;
+            std::cout << "cgi : ";
+            for (size_t i = 0; i < _cgi.size(); i++)
+                std::cout << _cgi[i] << " ";
             std::cout << std::endl;
             std::cout << "locations : " << std::endl;
             for (size_t i = 0; i < _locations.size(); i++)

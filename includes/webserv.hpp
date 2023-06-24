@@ -8,3 +8,4 @@
 #include "socket.hpp"
 #include "Multiplexing.hpp"
 #include "parse_conf.hpp"
+#include "cgi.hpp"
