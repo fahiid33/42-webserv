@@ -13,7 +13,7 @@ Request::Request()
     this->file = "";
     this->body = "";
     this->conn = "";
-    this->timeOut = 8;
+    this->timeOut = 30;
     this->keepAlive = true;
     this->started = time(NULL);
 }
@@ -32,7 +32,7 @@ void Request::clear()
     this->body = "";
     this->conn = "";
     this->started = time(NULL);
-    this->timeOut = 8;
+    this->timeOut = 30;
 }
 
 Request::Request(const Request &req)
@@ -111,6 +111,10 @@ Request::Request(const char* request)
                     throw std::invalid_argument("0");
                 else if (conn == "keep-alive")
                     keepAlive = true;
+                else if (conn == "close")
+                    keepAlive = false;
+                else
+                    throw std::invalid_argument("0");
             }
             if (line == "Content-Length:")
             {
@@ -142,15 +146,22 @@ Request::Request(const char* request)
     if ((method != "GET" && method != "POST" && method != "Post" && method != "DELETE") || version != "HTTP/1.1")
     {
         std::cout << "method: " << method << std::endl;
+        if (method == "PUT")
+            throw std::invalid_argument("10");
+
         throw std::invalid_argument("8");
     }
     if (method == "POST" && content_length == -1 && tr_enc == "")
             throw std::invalid_argument("9");
-    if (keepAlive && timeOut == -1)
+    if (keepAlive)
     {
+        if (timeOut <= 0)
+            timeOut = 30;
         started = time(NULL);
     }
-    // std::string body = request.substr(request.find("\r\n\r\n") + 4, request.length() - 1);
+    else
+        timeOut = 0;
+    std::string body = this->request.substr(this->request.find("\r\n\r\n") + 4, this->request.length() - 1);
     // i(body.c_str()) > 100 )
     // {
     //         throw std::invalid_argument("Invalid request");
@@ -159,7 +170,8 @@ Request::Request(const char* request)
     // if (!flag)
     //     throw std::invalid_argument("Invalid request");
     // else
-    //     this->body = body;
+    this->body = body;
+    std::cout << "body: " << body << std::endl;
 }
 
 Request::~Request()
@@ -223,7 +235,12 @@ std::string Request::getRequest()
     return this->request;
 }
 
-void Request::setRequest(std::string request)
+void Request::setStarted(time_t started)
+{
+    this->started = started;
+}
+
+void Request::setRequest(std::string request) 
 {
     this->request = request;
 }

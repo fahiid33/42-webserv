@@ -60,5 +60,7 @@ class Request {
         std::string getTr_enc();
         std::string getRequest();
         std::string getBody();
+
+        void setStarted(time_t started);
         void setRequest(std::string request);
 };

@@ -250,17 +250,23 @@ void Response::HandlePost(Request &req, Location &loc)
         return ;
     }
     // 201 created
-    // std::string new_file(strrchr(req.get_body().c_str(), '/') + get_file_ext(std::string(req.get_type())));
-    // std::string file_name = remove_repeated_slashes(loc.get_upload_path() + "/" + new_file);
-    // std::ifstream in(req.get_body().c_str(), std::ios::in | std::ios::binary);
-    // std::ofstream out(file_name, std::ios::out | std::ios::binary);
+    std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
+    
+    std::string new_file(request_resource);
+    // create the file if not exist
+    open(new_file.c_str(), O_CREAT | O_WRONLY, 0777);
+
+    std::ofstream out(new_file, std::ios::out | std::ios::binary);
+    out << req.getBody();
+    out.close();
+
+    _resp.first = "HTTP/1.1 201 Created\nContent-Type: text/plain\nConnection: close\nContent-Length: 13\n\n201 created";
+    _resp.second = 84;
     // out << in.rdbuf();
     // in.close();
     // out.close();
     // std::cout << "here" << std::endl;
     // remove(req.get_body().c_str());
-    std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
-    
     // just doing some tests khliha commented
     
     // if (file_exists(request_resource.c_str()))
@@ -409,6 +415,7 @@ void  Response::prepare_response(Request & req, Server & server)
     {
         _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
         _resp.second = 84;
+        std::cout << "response header : " << this->_resp.first << "00" << std::endl;
         return ;
     }
     else if (it == server.getLocations().end() && ite != server.getLocations().end())
@@ -418,12 +425,14 @@ void  Response::prepare_response(Request & req, Server & server)
     {
         _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + it->getRedirection().first + "\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
         _resp.second = 84;
+        std::cout << "response header : " << this->_resp.first << "00" << std::endl;
         return ;
     }
     if (std::find(it->getAllowedMethods().begin(), it->getAllowedMethods().end(), req.getMethod()) == it->getAllowedMethods().end())
     {
         _resp.first = "HTTP/1.1 405 Method Not Allowed\nContent-Type: text/html\nContent-Length: 13\n\n405 method not allowed";
         _resp.second = 102;
+        std::cout << "response header : " << this->_resp.first << "00" << std::endl;
         return ;
     }
     if (req.getMethod() == "GET")
@@ -438,6 +447,5 @@ void  Response::prepare_response(Request & req, Server & server)
     {
         HandleDelete(req, *it);
     }
-        std::cout << "response header : " << this->_resp.first << "00" << std::endl;
-
+    std::cout << "response header : " << this->_resp.first << "00" << std::endl;
 }

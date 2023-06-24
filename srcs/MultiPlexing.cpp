@@ -68,9 +68,9 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
     }
     buffer[rc] = '\0';
     // client.second.print_server();
-    std::cout << &(buffer[0]) << std::endl;
     client.first.setrequest(client.first.getrequest() + buffer);
     bzero(buffer, 1000);
+    client.first.getReq().setStarted(time(NULL));
     if (client.first.getrequest().find("\r\n\r\n") != std::string::npos)
     {
         client.first.setread_done(1);
@@ -134,7 +134,7 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
         }
         else if(!strcmp(e.what(), "10"))
         {
-            
+            client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 201 OK\r\n\r\n", 32));
         }
         else
         {
@@ -152,6 +152,7 @@ void MultiPlexing::handleWriteData(Socket &sock)
     char buffer[1025];
     bzero(buffer, 1025);
     int rc ;
+    sock.getReq().setStarted(time(NULL));
     if (!sock.get_Resp().getIsOpen())
     {
         rc = write(sock.getSocket_fd() , sock.get_Resp().getResp().first.c_str(), sock.get_Resp().getResp().first.length());
@@ -275,7 +276,7 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
             for (int i = 0; i < clients.size(); i++)
             {
                 std::cout << clients[i].first.getReq().getConn() << time(NULL) << clients[i].first.getReq().getStarted() << clients[i].first.getReq().getTimeOut() << std::endl;
-                if ((clients[i].first.getClose_conn() || (clients[i].first.getReq().getConn() && (time(NULL) - clients[i].first.getReq().getStarted() >= clients[i].first.getReq().getTimeOut()))))
+                if ((clients[i].first.getClose_conn() || !clients[i].first.getReq().getConn() || (clients[i].first.getReq().getConn() && (time(NULL) - clients[i].first.getReq().getStarted() >= clients[i].first.getReq().getTimeOut()))))
                 {
                     // std::cout << "clian sala mn read" << std::endl;
                     // remove the socket fd from the sets : handle error "bad file descriptor"
