@@ -14,7 +14,7 @@ Request::Request()
     this->body = "";
     this->conn = "";
     this->timeOut = 30;
-    this->keepAlive = true;
+    this->keepAlive = false;
     this->started = time(NULL);
 }
 
@@ -28,7 +28,7 @@ void Request::clear()
     this->version = "";
     this->host = "";
     this->file = "";
-    this->keepAlive = true;
+    this->keepAlive = false;
     this->body = "";
     this->conn = "";
     this->started = time(NULL);
@@ -171,7 +171,7 @@ Request::Request(const char* request)
     //     throw std::invalid_argument("Invalid request");
     // else
     this->body = body;
-    std::cout << "body: " << body << std::endl;
+    // std::cout << "body: " << body << std::endl;
 }
 
 Request::~Request()

@@ -262,8 +262,9 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
     // std::ofstream out(new_file, std::ios::out | std::ios::binary);
     // out << req.getBody();
     // out.close();
-
-    // _resp.first = "HTTP/1.1 201 Created\nContent-Type: text/plain\nConnection: close\nContent-Length: 13\n\n201 created";
+    // std::string len = std::to_string(req.getBody().length());
+    // _resp.first = "HTTP/1.1 200 OK" CRLF "Connection: close" CRLF
+    // "Content-Type: text/html; charset=UTF-8" CRLF "Content-Length: " + len + CRLF CRLF "200 OK";
     // _resp.second = 84;
 
     /////////////////////////////
@@ -288,7 +289,6 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
 
     _resp.first = "HTTP/1.1 200 OK" CRLF "Connection: close" CRLF
     "Content-Type: text/html; charset=UTF-8" CRLF CRLF;
-    _resp.second = _resp.first.length();
     
 
     int fdtmp = dup(0);
@@ -303,31 +303,51 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
         exit (1);
     }
 
-    // if (child_pid == 0)
-    // {
-    //     /* If query string passed, set the environment variable */
-    //     // if (question != NULL)
-    //     // setenv ("QUERY_STRING", question, 1);
-    //     dup2(fd[1], STDOUT_FILENO);
+    if (child_pid == 0)
+    {
+        /* If query string passed, set the environment variable */
+        // if (question != NULL)
+        // setenv ("QUERY_STRING", question, 1);
+        dup2(fd[1], STDOUT_FILENO);
+        char **env = NULL;
+        /* Redirect the child process's STDOUT to write into the
+            socket and execute the CGI program */
+        close(fd[0]);
+        close(fd[1]);
 
-    //     /* Redirect the child process's STDOUT to write into the
-    //         socket and execute the CGI program */
-    //     dup2 (connection, STDOUT_FILENO);
-    //     execlp (cgi_file, cgi_file, NULL);
-    //     return true;
-    // }
+        char *av[3];
+        av[0] = strdup(server.get_cgi().get_Cgi().first.c_str());
+        av[1] = strdup(request_resource.c_str());
+        av[2] = NULL;
+
+        execve (av[0], av, env);
+        exit (0);
+    }
 
     /* The parent waits until the child process runs (writing to the
         client over the socket), then closes the socket and continues
         with the next request */
-   
-    // wait (NULL);
-    // shutdown (connection, SHUT_RDWR);
-    // close (connection);
+    close (fd[1]);
+
+    /* Read from the pipe and set resp */
+    const int BUFFER_SIZE = 4096;
+    char buffer[BUFFER_SIZE];
+    std::stringstream output;
+    ssize_t bytesRead;
+    while ((bytesRead = read(fd[0], buffer, BUFFER_SIZE)) > 0)
+    {
+        output.write(buffer, bytesRead);
+    }
+    close (fd[0]);
+    wait (NULL);
+    dup2(fdtmp, 0);
 
 
+    _resp.first += output.str();
 
-
+    std::cout << _resp.first << std::endl;
+    _resp.second = _resp.first.length();
+    return ;
     // std::vector<std::string>::iterator it;
     // if (isDirectory(request_resource.c_str()))
     // {

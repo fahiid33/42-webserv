@@ -82,7 +82,7 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
     }
     try
     {
-        std::cout << "+++++++++++++++++++++"<< client.first.getrequest() <<  " " << client.first.getSocket_fd() << rc <<client.first.getread_done() << "++++++++++++++++++++++++++++++++++++++" << std::endl;
+        // std::cout << "+++++++++++++++++++++"<< client.first.getrequest() <<  " " << client.first.getSocket_fd() << rc <<client.first.getread_done() << "++++++++++++++++++++++++++++++++++++++" << std::endl;
         Request req(client.first.getrequest().c_str());
 
         client.first.setReq(req);
