@@ -1,43 +1,35 @@
 #include "../includes/cgi.hpp"
 
-cgi::cgi() // should be cgi(server)
-{
-    Server server;
-    std::vector <std::string> cgi_path = server.get_cgi(); // should be sent by methods
-    
-    // first = extension, second = path
-    for (int i = 0; i < cgi_path.size(); i++)
-    {
-        std::string extension = cgi_path[i].substr(cgi_path[i].find_last_of(".") + 1);
-        std::string path = cgi_path[i].substr(0, cgi_path[i].find_last_of("."));
-        _cgi.push_back(std::make_pair(extension, path));
-    }
-    print_cgi();
-}
-
-cgi::~cgi()
+Cgi::Cgi() // should be Cgi(server)
 {
 }
 
-void cgi::print_cgi()
+Cgi::~Cgi()
 {
-    for (int i = 0; i < _cgi.size(); i++)
-    {
-        std::cout << _cgi[i].first << " " << _cgi[i].second << std::endl;
-    }
 }
 
-cgi::Cgi & cgi::getCgi()
+void Cgi::print_cgi()
 {
-    return _cgi;
+    std::cout << "CGI: " << this->_cgi.first << " " << this->_cgi.second << std::endl;
 }
 
-void cgi::setCgi(cgi::Cgi &cgi)
+std::pair<std::string, std::string> & Cgi::get_Cgi()
 {
-    _cgi = cgi;
+    return this->_cgi;
 }
 
-void cgi::cgi_exec(Request &req, Response &resp, Server &server)
+void Cgi::set_Cgi(std::pair<std::string, std::string> const &cgi)
 {
+    this->_cgi = cgi;
+}
 
+// void Cgi::cgi_exec(Request &req, Response &resp, Server &server)
+// {
+
+// }
+
+void Cgi::clear()
+{
+    this->_cgi.first.clear();
+    this->_cgi.second.clear();
 }

@@ -167,3 +167,8 @@ void Server::setIndex(std::vector<std::string> index)
 {
     this->_index = index;
 }
+
+Cgi & Server::get_cgi()
+{
+    return this->_cgi;
+}

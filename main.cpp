@@ -23,13 +23,15 @@ int main(int ac, char **av)
     {
         Config conf;
         conf.parse_config();
-
+        for(int i =0; i < conf.getServers().size(); i++)
+        {
+            std::cout << "server " << i << std::endl;
+            conf.getServers()[i].print_server();
+        }
+        mp.setup_server(conf.getServers());
         // cgi cc;
         // mp.setup_server(conf.getServers());
-        // for(int i =0; i < conf.getServers().size(); i++)
-        // {
-        //     conf.getServers()[i].print_server();
-        // }
+        
     }
     return 0;
 }

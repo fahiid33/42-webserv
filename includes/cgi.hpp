@@ -1,24 +1,28 @@
 #pragma once
 
-#include "server.hpp"
 #include "request.hpp"
-#include "response.hpp"
+// #include "response.hpp"
 
 
 
-class cgi
+class Cgi
 {
-    public :
-    typedef std::vector<std::pair <std::string, std::string > > Cgi;
-
     private :
-    cgi::Cgi _cgi;
+    std::pair<std::string, std::string> _cgi;
+    std::map<std::string, std::string> env;
+    // cgi::Cgi _cgi;
 
     public :
-    cgi();
-    ~cgi();
-    cgi::Cgi & getCgi();
-    void setCgi(cgi::Cgi &cgi);
-    void cgi_exec(Request &req, Response &resp, Server &server);
+    Cgi();
+    ~Cgi();
+    std::pair<std::string, std::string> & get_Cgi();
+    void set_Cgi(std::pair<std::string, std::string> const &cgi);
+    // void cgi_exec(Request &req, Response &resp, Server &server);
     void print_cgi();
+    void clear();
+    int  OK(){
+        if (this->_cgi.first.empty() || this->_cgi.second.empty())
+            return 0;
+        return 1;
+    };
 };

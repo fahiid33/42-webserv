@@ -1,6 +1,7 @@
 
 #include "../includes/response.hpp"
 #include "../includes/server.hpp"
+#define CRLF "\r\n"
 
 Response::Response() : _offset(0), fd(0), is_open(0), _content_type(""), file(""), _resp(std::make_pair("", 0)) {
     mime_types = mime_types_init();
@@ -251,17 +252,23 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
     }
     // 201 created
     std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
+
     
-    std::string new_file(request_resource);
-    // create the file if not exist
-    open(new_file.c_str(), O_CREAT | O_WRONLY, 0777);
+    /////////////////////////////
+    // std::string new_file(request_resource);
+    // // create the file
+    // open(new_file.c_str(), O_CREAT | O_WRONLY, 0777);
 
-    std::ofstream out(new_file, std::ios::out | std::ios::binary);
-    out << req.getBody();
-    out.close();
+    // std::ofstream out(new_file, std::ios::out | std::ios::binary);
+    // out << req.getBody();
+    // out.close();
 
-    _resp.first = "HTTP/1.1 201 Created\nContent-Type: text/plain\nConnection: close\nContent-Length: 13\n\n201 created";
-    _resp.second = 84;
+    // _resp.first = "HTTP/1.1 201 Created\nContent-Type: text/plain\nConnection: close\nContent-Length: 13\n\n201 created";
+    // _resp.second = 84;
+
+    /////////////////////////////
+
+
     // out << in.rdbuf();
     // in.close();
     // out.close();
@@ -275,36 +282,82 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
     //     _resp.second = 84;
     //     return ;
     // }
-    std::vector<std::string>::iterator it;
-    if (isDirectory(request_resource.c_str()))
+
+
+
+
+    _resp.first = "HTTP/1.1 200 OK" CRLF "Connection: close" CRLF
+    "Content-Type: text/html; charset=UTF-8" CRLF CRLF;
+    _resp.second = _resp.first.length();
+    
+
+    int fdtmp = dup(0);
+
+    int fd[2];
+
+    pipe (fd);
+
+    pid_t child_pid = fork ();
+    if (child_pid < 0)
     {
-        if (request_resource[request_resource.length() - 1] != '/')
-        {
-            _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + req.getPath() + req.getFile() + "/\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
-            _resp.second = 84;
-            return ;
-        }
-        for (it = loc.getIndex().begin(); it != loc.getIndex().end(); it++)
-        {
-            if (file_exists((request_resource + *it).c_str()))
-            {
-                if (!server.get_cgi().empty())
-                {
-                     // run_cgi();
-                     return ;
-                }
-                else
-                {
-                    _resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 13\n\n403 forbidden";
-                    _resp.second = 84;
-                    return ;
-                }
-            }
-        }
-         _resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 13\n\n403 forbidden";
-        _resp.second = 84;
-        return ;
+        exit (1);
     }
+
+    // if (child_pid == 0)
+    // {
+    //     /* If query string passed, set the environment variable */
+    //     // if (question != NULL)
+    //     // setenv ("QUERY_STRING", question, 1);
+    //     dup2(fd[1], STDOUT_FILENO);
+
+    //     /* Redirect the child process's STDOUT to write into the
+    //         socket and execute the CGI program */
+    //     dup2 (connection, STDOUT_FILENO);
+    //     execlp (cgi_file, cgi_file, NULL);
+    //     return true;
+    // }
+
+    /* The parent waits until the child process runs (writing to the
+        client over the socket), then closes the socket and continues
+        with the next request */
+   
+    // wait (NULL);
+    // shutdown (connection, SHUT_RDWR);
+    // close (connection);
+
+
+
+
+    // std::vector<std::string>::iterator it;
+    // if (isDirectory(request_resource.c_str()))
+    // {
+    //     if (request_resource[request_resource.length() - 1] != '/')
+    //     {
+    //         _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + req.getPath() + req.getFile() + "/\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
+    //         _resp.second = 84;
+    //         return ;
+    //     }
+    //     for (it = loc.getIndex().begin(); it != loc.getIndex().end(); it++)
+    //     {
+    //         if (file_exists((request_resource + *it).c_str()))
+    //         {
+    //             if (!server.get_cgi().OK())
+    //             {
+    //                  // run_cgi();
+    //                  return ;
+    //             }
+    //             else
+    //             {
+    //                 _resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 13\n\n403 forbidden";
+    //                 _resp.second = 84;
+    //                 return ;
+    //             }
+    //         }
+    //     }
+    //      _resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 13\n\n403 forbidden";
+    //     _resp.second = 84;
+    //     return ;
+    // }
 
 }
 
@@ -325,7 +378,7 @@ void Response::HandleDelete(Request &req, Location &loc, Server &Server)
             _resp.second = 82;
             return ;
         }
-        if(Server.get_cgi().empty())
+        if(Server.get_cgi().OK())
         {
             if(!remove(request_resource.c_str()))
             {
@@ -352,7 +405,7 @@ void Response::HandleDelete(Request &req, Location &loc, Server &Server)
     }
     else
     {
-       if(Server.get_cgi().empty())
+       if(Server.get_cgi().OK())
        {
             if(!remove(request_resource.c_str()))
             {

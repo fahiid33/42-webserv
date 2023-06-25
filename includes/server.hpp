@@ -24,6 +24,7 @@
 #include <sys/wait.h>
 #include "socket.hpp"
 #include "parse_conf.hpp"
+#include "cgi.hpp"
 
 
 class Location
@@ -38,8 +39,6 @@ class Location
         size_t                                              _clientMaxBodySize;
         std::string                                         _uploadPath;
         std::pair<std::string, std::string>                 _redirection;
-        // std::vector<std::string>                            _cgi_extension;     // .php
-        // std::vector<std::string>                            _cgi_path;          // /usr/bin/php-cgi
 
     public:
         Location();
@@ -49,8 +48,6 @@ class Location
         std::string                                         & getLocationPath();
         std::vector<std::string>                            & getAllowedMethods();
         
-        // std::vector<std::string>                            & get_cgi_extension();
-        // std::vector<std::string>                            & get_cgi_path();
         std::string                                         & getRoot();
         std::vector<std::string>                            & getIndex();
         bool                                                & getAutoIndex();
@@ -107,7 +104,7 @@ class Server
         std::vector<std::string> _index;
         int max_sd;
         int end_server;
-        std::vector<std::string>                            _cgi;
+        Cgi  _cgi;
         
     public:
         Server();
@@ -118,8 +115,7 @@ class Server
         fd_set& getWriteCpy();
         fd_set& getWorkingSet();
         Socket & getServerSocket();
-        std::vector<std::string>                            & get_cgi();
-        // std::vector<std::string>                            & get_cgi_path();
+        Cgi & get_cgi();
 
         int getEndServer();
         size_t & getPort();
@@ -132,7 +128,7 @@ class Server
         std::vector<std::string>    & getIndex();
         int getMaxSd();
 
-        
+        void    set_cgi(Cgi cgi);
         void    setEndServer(int end_server);
         void    setServerSocket(Socket & sock);
         void    setMaxSd(int sd);
@@ -157,9 +153,8 @@ class Server
                 std::cout << _serverNames[i] << " ";
             std::cout << std::endl;
             std::cout << "cgi : ";
-            for (size_t i = 0; i < _cgi.size(); i++)
-                std::cout << _cgi[i] << " ";
-            std::cout << std::endl;
+            std::cout << _cgi.get_Cgi().first << " ";
+            std::cout << _cgi.get_Cgi().second << std::endl;
             std::cout << "locations : " << std::endl;
             for (size_t i = 0; i < _locations.size(); i++)
             {
