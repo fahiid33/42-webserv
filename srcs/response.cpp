@@ -288,64 +288,79 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
 
 
     _resp.first = "HTTP/1.1 200 OK" CRLF "Connection: close" CRLF
-    "Content-Type: text/html; charset=UTF-8" CRLF CRLF;
+    "Content-Type: text/html; charset=UTF-8" CRLF
+    "Content-Length: " + std::to_string(req.getBody().length()) + CRLF CRLF;
     
-
+    std::cout << "normally :\n" << req.getBody() << std::endl;
     int fdtmp = dup(0);
 
-    int fd[2];
 
-    pipe (fd);
+    // open a tmp file and put req.getBody() in it
 
-    pid_t child_pid = fork ();
-    if (child_pid < 0)
-    {
-        exit (1);
+
+    int fdin[2];
+    int fdout[2];
+    pipe(fdin);
+    pipe(fdout);
+
+    pid_t child_pid = fork();
+    if (child_pid < 0) {
+        exit(1);
     }
 
-    if (child_pid == 0)
-    {
-        /* If query string passed, set the environment variable */
-        // if (question != NULL)
-        // setenv ("QUERY_STRING", question, 1);
-        dup2(fd[1], STDOUT_FILENO);
-        char **env = NULL;
-        /* Redirect the child process's STDOUT to write into the
-            socket and execute the CGI program */
-        close(fd[0]);
-        close(fd[1]);
+    if (child_pid == 0) {
+        // Redirect the child process's STDOUT to write into the input pipe
+        dup2(fdout[1], STDOUT_FILENO);
+
+        // Redirect the child process's STDIN to read from the output pipe
+        dup2(fdin[0], STDIN_FILENO);
+
+        // Close unused pipe ends
+        close(fdout[0]);
+        close(fdin[1]);
 
         char *av[3];
         av[0] = strdup(server.get_cgi().get_Cgi().first.c_str());
         av[1] = strdup(request_resource.c_str());
         av[2] = NULL;
 
-        execve (av[0], av, env);
-        exit (0);
+        char **env = NULL;
+        execve(av[0], av, env);
+
+        exit(0);
     }
 
-    /* The parent waits until the child process runs (writing to the
-        client over the socket), then closes the socket and continues
-        with the next request */
-    close (fd[1]);
+    // Close unused pipe ends
+    close(fdout[1]);
+    close(fdin[0]);
+
+    // Write the POST body to the input pipe
+    int rc = write(fdin[1], req.getBody().c_str(), req.getBody().length());
+    if (rc != req.getBody().length()) {
+        perror("error write: ");
+        exit(1);
+    }
+
+    // Close the input pipe write end to indicate end of data
+    close(fdin[1]);
 
     /* Read from the pipe and set resp */
     const int BUFFER_SIZE = 4096;
     char buffer[BUFFER_SIZE];
     std::stringstream output;
     ssize_t bytesRead;
-    while ((bytesRead = read(fd[0], buffer, BUFFER_SIZE)) > 0)
+    while ((bytesRead = read(fdout[0], buffer, BUFFER_SIZE)) > 0)
     {
         output.write(buffer, bytesRead);
     }
-    close (fd[0]);
+    close (fdout[0]);
     wait (NULL);
     dup2(fdtmp, 0);
 
 
     _resp.first += output.str();
 
-    std::cout << _resp.first << std::endl;
+    std::cout << "cgi res:\n" << _resp.first << std::endl;
     _resp.second = _resp.first.length();
     return ;
     // std::vector<std::string>::iterator it;
@@ -468,7 +483,7 @@ void  Response::prepare_response(Request & req, Server & server)
     // /       ite = /     it = it.end()
     // /srcs   ite = /     it = it.end()
     // /       ite = ite.end()     it = it.end()
-
+    // std::cout << "\033[33m" << "req path = " << req.getRequest() << std::endl;
     while (it != server.getLocations().end())
     {
         if (req.getPath().find(it->getLocationPath()) != std::string::npos)
@@ -488,7 +503,6 @@ void  Response::prepare_response(Request & req, Server & server)
     {
         _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
         _resp.second = 84;
-        std::cout << "response header : " << this->_resp.first << "00" << std::endl;
         return ;
     }
     else if (it == server.getLocations().end() && ite != server.getLocations().end())
@@ -498,14 +512,12 @@ void  Response::prepare_response(Request & req, Server & server)
     {
         _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + it->getRedirection().first + "\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
         _resp.second = 84;
-        std::cout << "response header : " << this->_resp.first << "00" << std::endl;
         return ;
     }
     if (std::find(it->getAllowedMethods().begin(), it->getAllowedMethods().end(), req.getMethod()) == it->getAllowedMethods().end())
     {
         _resp.first = "HTTP/1.1 405 Method Not Allowed\nContent-Type: text/html\nContent-Length: 13\n\n405 method not allowed";
         _resp.second = 102;
-        std::cout << "response header : " << this->_resp.first << "00" << std::endl;
         return ;
     }
     if (req.getMethod() == "GET")
@@ -520,5 +532,4 @@ void  Response::prepare_response(Request & req, Server & server)
     {
         HandleDelete(req, *it, server);
     }
-    std::cout << "response header : " << this->_resp.first << "00" << std::endl;
 }

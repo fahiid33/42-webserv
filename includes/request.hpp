@@ -63,4 +63,5 @@ class Request {
 
         void setStarted(time_t started);
         void setRequest(std::string request);
+        void setBody(std::string body);
 };

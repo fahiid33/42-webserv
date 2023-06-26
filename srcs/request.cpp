@@ -14,7 +14,7 @@ Request::Request()
     this->body = "";
     this->conn = "";
     this->timeOut = 30;
-    this->keepAlive = false;
+    this->keepAlive = true;
     this->started = time(NULL);
 }
 
@@ -28,7 +28,7 @@ void Request::clear()
     this->version = "";
     this->host = "";
     this->file = "";
-    this->keepAlive = false;
+    this->keepAlive = true;
     this->body = "";
     this->conn = "";
     this->started = time(NULL);
@@ -171,6 +171,8 @@ Request::Request(const char* request)
     //     throw std::invalid_argument("Invalid request");
     // else
     this->body = body;
+    if (body.size() > 0 && content_length == -1 && tr_enc == "")
+        throw std::invalid_argument("9");
     // std::cout << "body: " << body << std::endl;
 }
 
@@ -248,4 +250,9 @@ void Request::setRequest(std::string request)
 int Request::getContent_length()
 {
     return this->content_length;
+}
+
+void Request::setBody(std::string body)
+{
+    this->body = body;
 }
