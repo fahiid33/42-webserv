@@ -252,7 +252,6 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
     }
     // 201 created
     std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
-
     
     /////////////////////////////
     // std::string new_file(request_resource);
@@ -285,7 +284,7 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
     // }
 
 
-
+    server.get_cgi().initEnv(req, "localhost");
 
     _resp.first = "HTTP/1.1 200 OK" CRLF "Connection: close" CRLF
     "Content-Type: text/html; charset=UTF-8" CRLF

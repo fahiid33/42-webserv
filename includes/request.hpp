@@ -38,6 +38,7 @@ class Request {
         std::string conn;
         std::string tr_enc;
         std::string body;
+        std::map<std::string, std::string> headers;
         int         content_length;
 
     public:
@@ -64,4 +65,7 @@ class Request {
         void setStarted(time_t started);
         void setRequest(std::string request);
         void setBody(std::string body);
+
+        void parseFirstLine(std::string &line);
+        void Request::ParseHeaders(std::istringstream &file);
 };

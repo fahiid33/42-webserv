@@ -13,6 +13,7 @@ Request::Request()
     this->file = "";
     this->body = "";
     this->conn = "";
+    this->headers.clear();
     this->timeOut = 30;
     this->keepAlive = true;
     this->started = time(NULL);
@@ -28,6 +29,7 @@ void Request::clear()
     this->version = "";
     this->host = "";
     this->file = "";
+    this->headers.clear();
     this->keepAlive = true;
     this->body = "";
     this->conn = "";
@@ -45,6 +47,7 @@ Request::Request(const Request &req)
     this->body = req.body;
     this->version = req.version;
     this->host = req.host;
+    this->headers = req.headers;
     this->keepAlive = req.keepAlive;
     this->timeOut = req.timeOut;
     this->file = req.file;
@@ -59,6 +62,7 @@ Request &Request::operator=(const Request &req)
     this->tr_enc = req.tr_enc;
     this->body = req.body;
     this->method = req.method;
+    this->headers = req.headers;
     this->path = req.path;
     this->timeOut = req.timeOut;
     this->version = req.version;
@@ -70,110 +74,114 @@ Request &Request::operator=(const Request &req)
     return *this;
 }
 
-Request::Request(const char* request)
+void searchThrow(std::string &out, std::string &line, std::string const &search)
 {
-    std::istringstream iss;
-    std::istringstream file;
-    std::string line;
-
-    this->clear();
-    this->request += request;
-    // std::cout << request << std::endl;
-    file.str(request);
-    std::getline(file, line);
-    iss.str(line);
-    iss >> method >> path >> version;
-    if(iss >> version)
-        throw std::invalid_argument("0");
-    if (path.size() > 2048)
-        throw std::invalid_argument("0");
-    if (path.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%") != std::string::npos)
-        throw std::invalid_argument("0");
-    this->file = path.substr(path.find_last_of('/') + 1, path.length() - 1);
-    this->path = path.substr(0, path.find_last_of('/') + 1);
-    // std::cout << request << std::endl;
-    while(std::getline(file, line))
+    size_t pos = line.find(search);
+    if (pos != std::string::npos)
     {
-        iss.clear();
-        iss.str(line);
-        if (iss >> line)
-        {
-            if (line == "Host:")
-            {
-                iss >> host;
-                if (iss >> host)
-                    throw std::invalid_argument("1");
-            }
-            if (line == "Connection:")
-            {
-                iss >> conn;
-                if (iss >> conn)
-                    throw std::invalid_argument("0");
-                else if (conn == "keep-alive")
-                    keepAlive = true;
-                else if (conn == "close")
-                    keepAlive = false;
-                else
-                    throw std::invalid_argument("0");
-            }
-            if (line == "Content-Length:")
-            {
-                iss >> content_length;
-                if (iss >> content_length)
-                    throw std::invalid_argument("0");
-            }
-            if (line == "Transfer-Encoding:")
-            {
-                iss >> tr_enc;
-                if (iss >> tr_enc)
-                    throw std::invalid_argument("0");
-                else if (tr_enc != "chunked")
-                    throw std::invalid_argument("5");
-            }
-            if (line == "Keep-Alive:")
-            {
-                // std::string chk("");
-                std::getline(iss, line , '=');
-                if (line != "timeout"){
-                    throw std::invalid_argument("0");
-                }
-                else if(!(iss >> timeOut) || timeOut < 0){
-                    throw std::invalid_argument("0");
-                }
-            }
-        }
+        out = line.substr(0, pos);
+        line = line.substr(pos + search.length(), line.length() - 1);
     }
-    if ((method != "GET" && method != "POST" && method != "Post" && method != "DELETE") || version != "HTTP/1.1")
+    else
+        throw std::invalid_argument("0");
+}
+
+void Request::parseFirstLine(std::string &line)
+{
+    std::string str = this->request;
+    searchThrow(method, line, " ");
+    if (method != "GET" && method != "POST" && method != "DELETE")
     {
         std::cout << "method: " << method << std::endl;
         if (method == "PUT")
             throw std::invalid_argument("10");
-
         throw std::invalid_argument("8");
     }
-    if (method == "POST" && content_length == -1 && tr_enc == "")
+    searchThrow(path, line, " ");
+    if (path.length() > 2048)
+        throw std::invalid_argument("0");
+    if (path.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%") != std::string::npos)
+        throw std::invalid_argument("0");
+    searchThrow(version, line, "\r");
+    if (version != "HTTP/1.1")
+        throw std::invalid_argument("0");
+    this->file = path.substr(path.find_last_of('/') + 1, path.length() - 1);
+    this->path = path.substr(0, path.find_last_of('/') + 1);
+}
+
+void Request::ParseHeaders(std::istringstream &file)
+{
+    std::string line;
+    std::string key;
+    std::string value;
+    
+    while(std::getline(file, line) && line != "\r")
+    {
+        searchThrow(key, line, ":");
+        searchThrow(value, line, "\r");
+                
+        if (key == "Host:" && value.empty()) // check against the server name
+            throw std::invalid_argument("1");
+        else if (key == "Connection:")
+        {
+            if (value == "keep-alive")
+                keepAlive = true;
+            else if (value == "close")
+                keepAlive = false;
+            else
+                throw std::invalid_argument("0");
+        }
+        else if (key == "Content-Length:" && (value.empty() || value.find_first_not_of("0123456789") == std::string::npos)) // check the value against the server max_body size
+        {
+            throw std::invalid_argument("0");
+        }
+        else if (key == "Transfer-Encoding:")
+        {
+            if (value.empty())
+                throw std::invalid_argument("0");
+            else if (key != "chunked")
+                throw std::invalid_argument("5");
+        }
+        else if (key == "Keep-Alive:")
+        {
+            std::string chck;
+            searchThrow(chck, value, "=");
+            value = value.substr(0, value.length() - 2);
+            if (chck != "timeout"){
+                throw std::invalid_argument("0");
+            }
+            else if (value.find_first_not_of("0123456789") != std::string::npos)
+                throw std::invalid_argument("0");
+            else
+            {
+                keepAlive = true;
+                timeOut = atoi(value.c_str());
+            }
+        }
+        this->headers[key] = value;
+    }
+    
+    if (method == "POST" && (this->headers.find("Content-Length:") == this->headers.end() &&
+    this->headers.find("Transfer-Encoding:") == this->headers.end()) || (this->headers.find("Content-Length:") !=
+    this->headers.end() &&this->headers.find("Transfer-Encoding:") != this->headers.end()))
             throw std::invalid_argument("9");
     if (keepAlive)
-    {
-        if (timeOut <= 0)
-            timeOut = 30;
         started = time(NULL);
-    }
-    else
-        timeOut = 0;
+}
+
+Request::Request(const char* request)
+{
+    std::string line;
+    std::istringstream file;
+
+    this->clear();
+    this->request = request;
+    file.str(request);
+    std::getline(file, line);
+    this->parseFirstLine(line);
+    this->ParseHeaders(file);    
     std::string body = this->request.substr(this->request.find("\r\n\r\n") + 4, this->request.length() - 1);
-    // i(body.c_str()) > 100 )
-    // {
-    //         throw std::invalid_argument("Invalid request");
-    // }
-    // bool flag = (*(request.end() - 1) == '\n' && *(request.end() - 2) == '\r' && *(request.end() - 3) == '\n' && *(request.end() - 4) == '\r');
-    // if (!flag)
-    //     throw std::invalid_argument("Invalid request");
-    // else
     this->body = body;
-    if (body.size() > 0 && content_length == -1 && tr_enc == "")
-        throw std::invalid_argument("9");
-    // std::cout << "body: " << body << std::endl;
 }
 
 Request::~Request()
