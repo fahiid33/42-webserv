@@ -136,7 +136,7 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
                 const std::string& value = it->second;
                 std::cout << "key: " << key << " value: " << value << std::endl;
             }
-            std::cout << "Body: " << client.first.getReq().getBody() << std::endl;
+            // std::cout << "Body: " << client.first.getReq().getBody() << std::endl;
         }
         if (!client.first.getReq().getHeaders().empty() && client.first.getReq().getHeaders().find("Content-Length") != client.first.getReq().getHeaders().end())
         {
@@ -191,7 +191,7 @@ void MultiPlexing::handleWriteData(Socket &sock)
     if (!sock.get_Resp().getIsOpen())
     {
         rc = write(sock.getSocket_fd() , sock.get_Resp().getResp().first.c_str(), sock.get_Resp().getResp().first.length());
-        std::cout << sock.get_Resp().getResp().first << "\n wrote: " << rc << std::endl;
+        // std::cout << sock.get_Resp().getResp().first << "\n wrote: " << rc << std::endl;
         if (sock.get_Resp().getFile() != "")
         {
             std::cout << "file " << sock.get_Resp().getFile() << " opened" << std::endl;
@@ -356,7 +356,7 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
 
             if (FD_ISSET(clients[i].first.getSocket_fd(), &io.write_cpy))
             {
-                std::cout << clients[i].first.get_Resp().getResp().first << std::endl;
+                // std::cout << clients[i].first.get_Resp().getResp().first << std::endl;
                 if (clients[i].first.get_Resp().getResp().first == "")
                 {
                     // std::cout << "prepare response" << clients[i].first.getReq().getRequest() << std::endl;

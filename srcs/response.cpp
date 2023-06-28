@@ -357,7 +357,7 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
     _resp.first += output.str();
     _resp.second = _resp.first.length();
     
-    std::cout << "output: " << output.str() << "length: " << _resp.second << std::endl;
+    // std::cout << "output: " << output.str() << "length: " << _resp.second << std::endl;
     return ;
     // std::vector<std::string>::iterator it;
     // if (isDirectory(request_resource.c_str()))
