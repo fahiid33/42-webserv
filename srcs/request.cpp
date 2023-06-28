@@ -8,6 +8,8 @@ Request::Request()
     this->tr_enc = "";
     this->method = "";
     this->path = "";
+    this->query = "";
+    this->boundary = "";
     this->version = "";
     this->host = "";
     this->file = "";
@@ -24,7 +26,9 @@ void Request::clear()
     this->request = "";
     this->content_length = -1;
     this->tr_enc = "";
+    this->query = "";
     this->method = "";
+    this->boundary = "";
     this->path = "";
     this->version = "";
     this->host = "";
@@ -44,6 +48,8 @@ Request::Request(const Request &req)
     this->tr_enc = req.tr_enc;
     this->method = req.method;
     this->path = req.path;
+    this->query = req.query;
+    this->boundary = req.boundary;
     this->body = req.body;
     this->version = req.version;
     this->host = req.host;
@@ -63,6 +69,8 @@ Request &Request::operator=(const Request &req)
     this->body = req.body;
     this->method = req.method;
     this->headers = req.headers;
+    this->boundary = req.boundary;
+    this->query = req.query;
     this->path = req.path;
     this->timeOut = req.timeOut;
     this->version = req.version;
@@ -149,6 +157,16 @@ void Request::ParseHeaders(std::istringstream &file)
                 throw std::invalid_argument("0");
             else if (key != "chunked")
                 throw std::invalid_argument("5");
+        }
+        else if (key == "Content-Type" && value.find("multipart/form-data") == 0)
+        {
+            std::string chck;
+            std::string valos = value;
+            searchThrow(line, value, "; ");
+            searchThrow(chck, value, "=");
+            if (chck != "boundary")
+                throw std::invalid_argument("0");
+            value = valos;
         }
         else if (key == "Keep-Alive")
         {

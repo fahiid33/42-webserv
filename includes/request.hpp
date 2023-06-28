@@ -31,6 +31,7 @@ class Request {
         std::string method;
         std::string path;
         std::string file;
+        std::string boundary;
         std::string query;
         bool        keepAlive;
         time_t      timeOut;
