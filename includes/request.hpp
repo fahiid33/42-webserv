@@ -61,11 +61,12 @@ class Request {
         std::string getTr_enc();
         std::string getRequest();
         std::string getBody();
+        std::map<std::string, std::string> getHeaders();
 
         void setStarted(time_t started);
         void setRequest(std::string request);
         void setBody(std::string body);
 
         void parseFirstLine(std::string &line);
-        void Request::ParseHeaders(std::istringstream &file);
+        void ParseHeaders(std::istringstream &file);
 };

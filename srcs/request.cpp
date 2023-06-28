@@ -16,7 +16,7 @@ Request::Request()
     this->headers.clear();
     this->timeOut = 30;
     this->keepAlive = true;
-    this->started = time(NULL);
+    this->started = 0;
 }
 
 void Request::clear()
@@ -33,7 +33,7 @@ void Request::clear()
     this->keepAlive = true;
     this->body = "";
     this->conn = "";
-    this->started = time(NULL);
+    this->started = 0;
     this->timeOut = 30;
 }
 
@@ -161,10 +161,13 @@ void Request::ParseHeaders(std::istringstream &file)
         this->headers[key] = value;
     }
     
-    if (method == "POST" && (this->headers.find("Content-Length:") == this->headers.end() &&
+    if (method == "POST" && ((this->headers.find("Content-Length:") == this->headers.end() &&
     this->headers.find("Transfer-Encoding:") == this->headers.end()) || (this->headers.find("Content-Length:") !=
-    this->headers.end() &&this->headers.find("Transfer-Encoding:") != this->headers.end()))
+    this->headers.end() && this->headers.find("Transfer-Encoding:") != this->headers.end())))
             throw std::invalid_argument("9");
+    if ((method == "GET" || method == "HEAD") && (this->headers.find("Content-Length:") !=
+    this->headers.end() || this->headers.find("Transfer-Encoding:") != this->headers.end()))
+        throw std::invalid_argument("9");
     if (keepAlive)
         started = time(NULL);
 }
@@ -182,11 +185,18 @@ Request::Request(const char* request)
     this->ParseHeaders(file);    
     std::string body = this->request.substr(this->request.find("\r\n\r\n") + 4, this->request.length() - 1);
     this->body = body;
+    if ((method == "GET" || method == "HEAD") && !body.empty())
+        throw std::invalid_argument("9");
 }
 
 Request::~Request()
 {
     this->clear();
+}
+
+std::map<std::string, std::string> Request::getHeaders()
+{
+    return this->headers;
 }
 
 std::string Request::getPath()

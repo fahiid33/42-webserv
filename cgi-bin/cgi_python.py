@@ -1,6 +1,4 @@
 import sys
 
-# for line in sys.stdin:
-#     print(line, end='')
-
-print ("hello")
+for line in sys.stdin:
+    print(line, end='')
