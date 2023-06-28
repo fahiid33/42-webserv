@@ -39,9 +39,7 @@ void    MultiPlexing::setClients(Clients & client)
 
 void    MultiPlexing::addClient(int sock, struct sockaddr_in address, Server & server)
 {
-    // Clients clients;
     this->clients.push_back(std::make_pair(Socket(sock, address), server));
-    // setClients(clients);
 }
 
 
@@ -51,7 +49,6 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
     int rc = 0;
     std::istringstream iss;
     std::string hello;
-    // std::cout << "socket read from it " << client.first.getSocket_fd() << std::endl;
     bzero(buffer, 1000);
     if((rc = read(client.first.getSocket_fd(), &buffer[0], sizeof(buffer))) < 0)
     {
@@ -62,24 +59,19 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
 
     if (rc == 0) 
     {
-        // std::cout << "  Connection closed" << std::endl;
         client.first.setClose_conn(1);
         return ;
     }
     buffer[rc] = '\0';
-    // client.second.print_server();
     client.first.setrequest(client.first.getrequest() + buffer);
-    // std::cout << client.first.getrequest() << std::endl;
     client.first.getReq().setStarted(time(NULL));
     if (client.first.getrequest().find("\r\n\r\n") != std::string::npos)
     {
-        std::cout << client.first.getrequest() << std::endl;
-        client.first.getReq().setBody(client.first.getReq().getBody() + buffer);
-        std::cout << "header done" << std::endl;
+        if (!client.first.getReq().getHeaders().empty())
+            client.first.getReq().setBody(client.first.getReq().getBody() + buffer);
         if (client.first.getReq().getHeaders().empty())
             try
             {
-                std::cout << "parsing headers" << std::endl;
                 Request req(client.first.getrequest().c_str());
                 client.first.setReq(req);
             }
@@ -126,9 +118,7 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
                     client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 402 Bad Request\r\n\r\n", 32));
                 }
                 else if(!strcmp(e.what(), "10"))
-                {
                     client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 201 OK\r\n\r\n", 32));
-                }
                 else
                 {
                     std::cout << "baaad " << e.what() << std::endl;
@@ -136,28 +126,38 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
                 }
                 client.first.setread_done(1);
             }
-        else if (client.first.getReq().getHeaders().find("Content-Lentgth") != client.first.getReq().getHeaders().end())
+        // fach kan constracti l object request, katprinta l map fiha tkhrbi9a
+        // print parsed request
         {
-            if (client.first.getReq().getBody().length() >= stoi(client.first.getReq().getHeaders().find("Content-Lentgth")->second))
+            std::cout << "Request: " << client.first.getReq().getMethod() << " " << client.first.getReq().getPath() << " " << client.first.getReq().getVersion() << std::endl;
+            std::cout << "Headers: " << std::endl;
+            for (std::map<std::string, std::string>::iterator it = client.first.getReq().getHeaders().begin(); it != client.first.getReq().getHeaders().end(); it++)
             {
-                if (client.first.getReq().getBody().length() > stoi(client.first.getReq().getHeaders().find("Content-Lentgth")->second))
-                {
-                    std::cout << "error appeared" << std::endl;
+                const std::string& key = it->first;
+                const std::string& value = it->second;
+                std::cout << "key: " << key << " value: " << value << std::endl;
+            }
+            std::cout << "Body: " << client.first.getReq().getBody() << std::endl;
+        }
+        if (!client.first.getReq().getHeaders().empty() && client.first.getReq().getHeaders().find("Content-Length") != client.first.getReq().getHeaders().end())
+        {
+            if (client.first.getReq().getBody().length() >= stoi(client.first.getReq().getHeaders().find("Content-Length")->second))
+            {
+                if (client.first.getReq().getBody().length() > stoi(client.first.getReq().getHeaders().find("Content-Length")->second))
                     client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 404 Bad Request\r\n\r\n", 32));
-                }
                 client.first.setread_done(1);
             }
             else
                 client.first.setread_done(0);
             return ;
+
         }
-        else if (client.first.getReq().getHeaders().find("Transfer-Encoding") != client.first.getReq().getHeaders().end())
+        if (!client.first.getReq().getHeaders().empty() && client.first.getReq().getHeaders().find("Transfer-Encoding") != client.first.getReq().getHeaders().end())
         {
             if (client.first.getrequest().find("0\r\n\r\n") != std::string::npos)
             {
                 if (client.first.getrequest().find("0\r\n\r\n") + 5 != client.first.getrequest().length())
                 {
-                    std::cout << "error appeared" << std::endl;
                     client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 404 Bad Request\r\n\r\n", 32));
                 }
                 client.first.setread_done(1);
@@ -167,16 +167,15 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
             return ;
         }
         if (client.first.getReq().getMethod() != "" && client.first.getReq().getMethod() != "POST")
-        {
-            std::cout << "sala l9raya" << std::endl;
             client.first.setread_done(1);
-        }
     }
     else
     {
+
         client.first.setread_done(0);
         return ;
     }
+
 }
 
 
@@ -193,6 +192,7 @@ void MultiPlexing::handleWriteData(Socket &sock)
     if (!sock.get_Resp().getIsOpen())
     {
         rc = write(sock.getSocket_fd() , sock.get_Resp().getResp().first.c_str(), sock.get_Resp().getResp().first.length());
+        std::cout << sock.get_Resp().getResp().first << "\n wrote: " << rc << std::endl;
         if (sock.get_Resp().getFile() != "")
         {
             std::cout << "file " << sock.get_Resp().getFile() << " opened" << std::endl;
@@ -206,10 +206,7 @@ void MultiPlexing::handleWriteData(Socket &sock)
             sock.get_Resp().setIsOpen(1);
         }
         else
-        {
             sock.setWrite_done(1);
-        }
-        // std::cout << GREEN << "response header : " << sock.get_Resp().getResp().first << std::endl;
         return ;
     }
     if ((sock.get_Resp().getOffset() + 1024) > sock.get_Resp().getResp().second && sock.get_Resp().getFile() != "")
@@ -222,7 +219,6 @@ void MultiPlexing::handleWriteData(Socket &sock)
     }
     else if (sock.get_Resp().getFile() != "")
     {
-        // std::cout << GREEN << "writing...." << "still " <<sock.get_Resp().getResp().second - sock.get_Resp().getOffset() << std::endl;
         read(sock.get_Resp().getFd(), buffer, 1024);
         rc = write(sock.getSocket_fd() , buffer, 1024);
         sock.get_Resp().setOffset(sock.get_Resp().getOffset() + rc);
@@ -355,16 +351,16 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
                 {
                     std::cout << "fd in write " << clients[i].first.getSocket_fd() << std::endl;
                     clients[i].first.setrequest("");
-                    clients[i].first.get_Resp().clear();
                     FD_SET(clients[i].first.getSocket_fd(), &io.writefds);
                 }
             }
 
             if (FD_ISSET(clients[i].first.getSocket_fd(), &io.write_cpy))
             {
+                std::cout << clients[i].first.get_Resp().getResp().first << std::endl;
                 if (clients[i].first.get_Resp().getResp().first == "")
                 {
-                    std::cout << "prepare response" << clients[i].first.getReq().getRequest() << std::endl;
+                    // std::cout << "prepare response" << clients[i].first.getReq().getRequest() << std::endl;
                     clients[i].first.get_Resp().prepare_response(clients[i].first.getReq(), clients[i].second);
                 }
                 handleWriteData(clients[i].first);

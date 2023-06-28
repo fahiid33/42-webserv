@@ -284,13 +284,10 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
     // }
 
 
-    server.get_cgi().initEnv(req, "localhost");
+    server.get_cgi().initEnv(req, "localhost", loc.getRoot());
 
     _resp.first = "HTTP/1.1 200 OK" CRLF "Connection: close" CRLF
-    "Content-Type: text/html; charset=UTF-8" CRLF
-    "Content-Length: " + std::to_string(req.getBody().length()) + CRLF CRLF;
-    
-    std::cout << "normally :\n" << req.getBody() << std::endl;
+    "Content-Type: text/html; charset=UTF-8" CRLF;    
     int fdtmp = dup(0);
 
 
@@ -323,8 +320,7 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
         av[1] = strdup(request_resource.c_str());
         av[2] = NULL;
 
-        char **env = NULL;
-        execve(av[0], av, env);
+        execve(av[0], av, server.get_cgi().getEnv());
 
         exit(0);
     }
@@ -356,11 +352,12 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
     wait (NULL);
     dup2(fdtmp, 0);
 
+    _resp.first += "Content-Length: " + std::to_string(output.str().length()) + CRLF CRLF;
 
     _resp.first += output.str();
-
-    std::cout << "cgi res:\n" << _resp.first << std::endl;
     _resp.second = _resp.first.length();
+    
+    std::cout << "output: " << output.str() << "length: " << _resp.second << std::endl;
     return ;
     // std::vector<std::string>::iterator it;
     // if (isDirectory(request_resource.c_str()))
@@ -477,12 +474,6 @@ void  Response::prepare_response(Request & req, Server & server)
     std::vector<Location>::iterator it = server.getLocations().begin();
     std::vector<Location>::iterator ite = server.getLocations().end();
 
-
-    // /gym/   ite = /     it = /gym/
-    // /       ite = /     it = it.end()
-    // /srcs   ite = /     it = it.end()
-    // /       ite = ite.end()     it = it.end()
-    // std::cout << "\033[33m" << "req path = " << req.getRequest() << std::endl;
     while (it != server.getLocations().end())
     {
         if (req.getPath().find(it->getLocationPath()) != std::string::npos)
@@ -506,7 +497,6 @@ void  Response::prepare_response(Request & req, Server & server)
     }
     else if (it == server.getLocations().end() && ite != server.getLocations().end())
         it = ite;
-    // std::cout << "\033[33m" << "location = " << it->getLocationPath() << " for req path " << req.getPath() << std::endl;
     if (it->getRedirection().first != "")
     {
         _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + it->getRedirection().first + "\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";

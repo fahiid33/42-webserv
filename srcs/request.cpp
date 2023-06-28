@@ -105,8 +105,12 @@ void Request::parseFirstLine(std::string &line)
     searchThrow(version, line, "\r");
     if (version != "HTTP/1.1")
         throw std::invalid_argument("0");
-    this->file = path.substr(path.find_last_of('/') + 1, path.length() - 1);
-    this->path = path.substr(0, path.find_last_of('/') + 1);
+    if (path.find_last_of('/') != std::string::npos)
+        this->file = path.substr(path.find_last_of('/') + 1, path.length() - 1);
+    if (path.find_last_of('?') != std::string::npos)
+        this->query = path.substr(path.find('?') + 1, path.length() - 1);
+    if (path.find_last_of('/') != std::string::npos)
+        this->path = path.substr(0, path.find_last_of('/') + 1);
 }
 
 void Request::ParseHeaders(std::istringstream &file)
@@ -117,12 +121,14 @@ void Request::ParseHeaders(std::istringstream &file)
     
     while(std::getline(file, line) && line != "\r")
     {
-        searchThrow(key, line, ":");
+        key.clear();
+        value.clear();
+        searchThrow(key, line, ": ");
         searchThrow(value, line, "\r");
-                
-        if (key == "Host:" && value.empty()) // check against the server name
+
+        if (key == "Host" && value.empty()) // check against the server name
             throw std::invalid_argument("1");
-        else if (key == "Connection:")
+        else if (key == "Connection")
         {
             if (value == "keep-alive")
                 keepAlive = true;
@@ -131,22 +137,22 @@ void Request::ParseHeaders(std::istringstream &file)
             else
                 throw std::invalid_argument("0");
         }
-        else if (key == "Content-Length:" && (value.empty() || value.find_first_not_of("0123456789") == std::string::npos)) // check the value against the server max_body size
+        else if (key == "Content-Length" && (value.empty() || value.find_first_not_of("0123456789") == std::string::npos)) // check the value against the server max_body size
         {
             throw std::invalid_argument("0");
         }
-        else if (key == "Transfer-Encoding:")
+        else if (key == "Transfer-Encoding")
         {
             if (value.empty())
                 throw std::invalid_argument("0");
             else if (key != "chunked")
                 throw std::invalid_argument("5");
         }
-        else if (key == "Keep-Alive:")
+        else if (key == "Keep-Alive")
         {
             std::string chck;
             searchThrow(chck, value, "=");
-            value = value.substr(0, value.length() - 2);
+            searchThrow(value, value, ", ");
             if (chck != "timeout"){
                 throw std::invalid_argument("0");
             }
@@ -158,15 +164,19 @@ void Request::ParseHeaders(std::istringstream &file)
                 timeOut = atoi(value.c_str());
             }
         }
-        this->headers[key] = value;
+        // hna kaytprinta ok, so l values khsshom ykono ok fl map
+        std::cout << "key: " << key << " value: " << value << std::endl;
+        std::string zb (value);
+        // this.headers.insert(std::pair<std::string, std::string>(key, zb));
+        this->headers[key] = zb;
     }
     
-    if (method == "POST" && ((this->headers.find("Content-Length:") == this->headers.end() &&
-    this->headers.find("Transfer-Encoding:") == this->headers.end()) || (this->headers.find("Content-Length:") !=
-    this->headers.end() && this->headers.find("Transfer-Encoding:") != this->headers.end())))
+    if (method == "POST" && ((this->headers.find("Content-Length") == this->headers.end() &&
+    this->headers.find("Transfer-Encoding") == this->headers.end()) || (this->headers.find("Content-Length") !=
+    this->headers.end() && this->headers.find("Transfer-Encoding") != this->headers.end())))
             throw std::invalid_argument("9");
-    if ((method == "GET" || method == "HEAD") && (this->headers.find("Content-Length:") !=
-    this->headers.end() || this->headers.find("Transfer-Encoding:") != this->headers.end()))
+    if ((method == "GET" || method == "HEAD") && (this->headers.find("Content-Length") !=
+    this->headers.end() || this->headers.find("Transfer-Encoding") != this->headers.end()))
         throw std::invalid_argument("9");
     if (keepAlive)
         started = time(NULL);
@@ -194,19 +204,24 @@ Request::~Request()
     this->clear();
 }
 
-std::map<std::string, std::string> Request::getHeaders()
+std::map<std::string, std::string> Request::getHeaders() const
 {
     return this->headers;
 }
 
-std::string Request::getPath()
+std::string Request::getPath() const
 {
     return this->path;
 }
 
-std::string Request::getMethod()
+std::string Request::getMethod() const
 {
     return this->method;
+}
+
+std::string Request::getQuery() const
+{
+    return this->query;
 }
 
 time_t Request::getStarted()
@@ -230,7 +245,7 @@ time_t Request::getTimeOut()
 }
 
 
-std::string Request::getFile()
+std::string Request::getFile() const
 {
     return this->file;
 }

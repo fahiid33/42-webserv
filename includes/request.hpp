@@ -31,6 +31,7 @@ class Request {
         std::string method;
         std::string path;
         std::string file;
+        std::string query;
         bool        keepAlive;
         time_t      timeOut;
         std::string version;
@@ -48,12 +49,13 @@ class Request {
         ~Request();
         Request &operator=(const Request &request);
         time_t getStarted();
-        std::string getMethod();
-        std::string getPath();
+        std::string getMethod() const;
+        std::string getPath() const;
 
         std::string getVersion();
         std::string getHost();
-        std::string getFile();
+        std::string getQuery() const;
+        std::string getFile() const;
         time_t      getTimeOut();
         bool        getConn();
         void        clear();
@@ -61,7 +63,7 @@ class Request {
         std::string getTr_enc();
         std::string getRequest();
         std::string getBody();
-        std::map<std::string, std::string> getHeaders();
+        std::map<std::string, std::string> getHeaders() const;
 
         void setStarted(time_t started);
         void setRequest(std::string request);
