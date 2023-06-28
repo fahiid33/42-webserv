@@ -63,7 +63,7 @@ class Request {
         std::string getTr_enc();
         std::string getRequest();
         std::string getBody();
-        std::map<std::string, std::string> getHeaders() const;
+        std::map<std::string, std::string> const & getHeaders() const;
 
         void setStarted(time_t started);
         void setRequest(std::string request);

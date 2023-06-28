@@ -127,7 +127,7 @@ void Request::ParseHeaders(std::istringstream &file)
         searchThrow(value, line, "\r");
 
         if (key == "Host" && value.empty()) // check against the server name
-            throw std::invalid_argument("1");
+            throw std::invalid_argument("0");
         else if (key == "Connection")
         {
             if (value == "keep-alive")
@@ -137,8 +137,10 @@ void Request::ParseHeaders(std::istringstream &file)
             else
                 throw std::invalid_argument("0");
         }
-        else if (key == "Content-Length" && (value.empty() || value.find_first_not_of("0123456789") == std::string::npos)) // check the value against the server max_body size
+        else if (key == "Content-Length" && (value.empty() || value.find_first_not_of("0123456789") != std::string::npos)) // check the value against the server max_body size
         {
+            std::cout << "value: " << value << std::endl;
+            std::cout << "key: " << key << std::endl;
             throw std::invalid_argument("0");
         }
         else if (key == "Transfer-Encoding")
@@ -164,11 +166,7 @@ void Request::ParseHeaders(std::istringstream &file)
                 timeOut = atoi(value.c_str());
             }
         }
-        // hna kaytprinta ok, so l values khsshom ykono ok fl map
-        std::cout << "key: " << key << " value: " << value << std::endl;
-        std::string zb (value);
-        // this.headers.insert(std::pair<std::string, std::string>(key, zb));
-        this->headers[key] = zb;
+        this->headers.insert(std::make_pair(key, value));
     }
     
     if (method == "POST" && ((this->headers.find("Content-Length") == this->headers.end() &&
@@ -189,10 +187,11 @@ Request::Request(const char* request)
 
     this->clear();
     this->request = request;
+    std::cout << "request: " << request << std::endl;
     file.str(request);
     std::getline(file, line);
     this->parseFirstLine(line);
-    this->ParseHeaders(file);    
+    this->ParseHeaders(file);
     std::string body = this->request.substr(this->request.find("\r\n\r\n") + 4, this->request.length() - 1);
     this->body = body;
     if ((method == "GET" || method == "HEAD") && !body.empty())
@@ -204,7 +203,7 @@ Request::~Request()
     this->clear();
 }
 
-std::map<std::string, std::string> Request::getHeaders() const
+std::map<std::string, std::string> const & Request::getHeaders() const
 {
     return this->headers;
 }

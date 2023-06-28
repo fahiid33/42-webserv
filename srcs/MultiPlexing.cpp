@@ -126,12 +126,11 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
                 }
                 client.first.setread_done(1);
             }
-        // fach kan constracti l object request, katprinta l map fiha tkhrbi9a
         // print parsed request
         {
             std::cout << "Request: " << client.first.getReq().getMethod() << " " << client.first.getReq().getPath() << " " << client.first.getReq().getVersion() << std::endl;
             std::cout << "Headers: " << std::endl;
-            for (std::map<std::string, std::string>::iterator it = client.first.getReq().getHeaders().begin(); it != client.first.getReq().getHeaders().end(); it++)
+            for (std::map<std::string, std::string>::const_iterator it = client.first.getReq().getHeaders().begin(); it != client.first.getReq().getHeaders().end(); it++)
             {
                 const std::string& key = it->first;
                 const std::string& value = it->second;
