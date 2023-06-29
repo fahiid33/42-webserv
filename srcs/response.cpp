@@ -244,7 +244,7 @@ void Response::HandleGet(Request &req, Location &loc, Server &server)
 void Response::HandlePost(Request &req, Location &loc, Server &server)
 {
     // if location support upload
-    if (loc.getClientMaxBodySize() < req.getBody().length())
+    if (loc.getClientMaxBodySize() < req.getBody().size())
     {
         _resp.first = "HTTP/1.1 413 Payload Too Large\nContent-Type: text/html\nContent-Length: 13\n\n413 payload too large";
         _resp.second = 84;
@@ -330,8 +330,11 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
     close(fdin[0]);
 
     // Write the POST body to the input pipe
-    int rc = write(fdin[1], req.getBody().c_str(), req.getBody().length());
-    if (rc != req.getBody().length()) {
+    // std::string body(req.getBody().begin(), req.getBody().end());
+    
+    // int rc = write(fdin[1], body.c_str(), req.getBody().size());
+    int rc = write(fdin[1], req.getBody().data(), req.getBody().size());
+    if (rc != req.getBody().size()) {
         perror("error write: ");
         exit(1);
     }

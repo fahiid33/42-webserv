@@ -39,14 +39,14 @@ class Request {
         std::string host;
         std::string conn;
         std::string tr_enc;
-        std::string body;
+        std::vector<unsigned char>  body;
         std::map<std::string, std::string> headers;
         int         content_length;
 
     public:
         Request();
         Request(const Request &request);
-        Request(const char* request);
+        Request(std::vector<unsigned char> request);
         ~Request();
         Request &operator=(const Request &request);
         time_t getStarted();
@@ -63,12 +63,12 @@ class Request {
         int         getContent_length();
         std::string getTr_enc();
         std::string getRequest();
-        std::string getBody();
+        std::vector<unsigned char> & getBody();
         std::map<std::string, std::string> const & getHeaders() const;
 
         void setStarted(time_t started);
         void setRequest(std::string request);
-        void setBody(std::string body);
+        void setBody(std::vector<unsigned char> body);
 
         void parseFirstLine(std::string &line);
         void ParseHeaders(std::istringstream &file);

@@ -1,7 +1,7 @@
 
 #include "../includes/socket.hpp"
 
-Socket::Socket() : s_fd(-1), close_conn(0), resp(Response()), req(Request()), address(), already_bind(0), write_done(1), request(""), read_done(0)
+Socket::Socket() : s_fd(-1), close_conn(0), resp(Response()), req(Request()), address(), already_bind(0), write_done(1), request(), read_done(0)
 {
 }
 
@@ -12,7 +12,7 @@ Socket::Socket(int s_fd, sockaddr_in address)
     this->already_bind = 0;
     this->s_fd = s_fd;
     this->close_conn = 0;
-    request = "";
+    this->request.clear();
     this->address = address;
     this->resp = Response();
     this->req = Request();
@@ -23,7 +23,7 @@ Socket::~Socket()
     this->write_done = 1;
     this->close_conn = 0;
     this->read_done = 0;
-    request = "";
+    this->request.clear();
     this->already_bind = 0;
     this->s_fd = -1;
     this->resp.clear();
@@ -35,7 +35,7 @@ void Socket::clear()
     this->write_done = 1;
     this->close_conn = 0;
     this->read_done = 0;
-    request = "";
+    this->request.clear();
     this->already_bind = 0;
     this->resp.clear();
     this->req.clear();
@@ -47,7 +47,7 @@ Socket & Socket::operator=(const Socket &sock)
     this->close_conn = sock.close_conn;
     this->already_bind = sock.already_bind;
     this->s_fd = sock.s_fd;
-    request = sock.request;
+    this->request = sock.request;
     this->address = sock.address;
     this->resp = sock.resp;
     this->req = sock.req;
@@ -64,12 +64,12 @@ void Socket::setread_done(int d)
     this->read_done = d;
 }
 
-void Socket::setrequest(std::string req)
+void Socket::setrequest(std::vector<unsigned char> req)
 {
     this->request = req;
 }
 
-std::string Socket::getrequest()
+std::vector<unsigned char> &Socket::getrequest()
 {
     return this->request;
 }

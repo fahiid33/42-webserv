@@ -13,7 +13,7 @@ Request::Request()
     this->version = "";
     this->host = "";
     this->file = "";
-    this->body = "";
+    this->body.clear();
     this->conn = "";
     this->headers.clear();
     this->timeOut = 30;
@@ -35,7 +35,7 @@ void Request::clear()
     this->file = "";
     this->headers.clear();
     this->keepAlive = true;
-    this->body = "";
+    this->body.clear();
     this->conn = "";
     this->started = 0;
     this->timeOut = 30;
@@ -131,9 +131,10 @@ void Request::ParseHeaders(std::istringstream &file)
     {
         key.clear();
         value.clear();
+        std::cout << "line: " << line << std::endl;
         searchThrow(key, line, ": ");
         searchThrow(value, line, "\r");
-
+        // hadi katfaili f aker line content-type dyal postman
         if (key == "Host" && value.empty()) // check against the server name
             throw std::invalid_argument("0");
         else if (key == "Connection")
@@ -194,26 +195,38 @@ void Request::ParseHeaders(std::istringstream &file)
     if ((method == "GET" || method == "HEAD") && (this->headers.find("Content-Length") !=
     this->headers.end() || this->headers.find("Transfer-Encoding") != this->headers.end()))
         throw std::invalid_argument("9");
-    if (keepAlive)
-        started = time(NULL);
 }
 
-Request::Request(const char* request)
+Request::Request(std::vector<unsigned char> request)
 {
     std::string line;
     std::istringstream file;
+    std::vector<unsigned char> pattern;
+    pattern.push_back('\r');
+    pattern.push_back('\n');
+    pattern.push_back('\r');
+    pattern.push_back('\n');
 
     this->clear();
-    this->request = request;
-    std::cout << "request: " << request << std::endl;
-    file.str(request);
+    auto pos = std::search(request.begin(), request.end(), pattern.begin(), pattern.end());
+    std::string str(request.begin(), pos + 2);
+
+    this->request = str;
+    //// this is header
+    std::cout << "request: " << str << std::endl;
+    file.str(str);
     std::getline(file, line);
     this->parseFirstLine(line);
     this->ParseHeaders(file);
-    std::string body = this->request.substr(this->request.find("\r\n\r\n") + 4, this->request.length() - 1);
-    this->body = body;
+    //// end of header
+    //// this is body
+    if (pos + 4 != request.end())
+    {    std::vector<unsigned char> body(pos + 4, request.end());
+        this->body = body;}
+    //// end of body
     if ((method == "GET" || method == "HEAD") && !body.empty())
         throw std::invalid_argument("9");
+    started = time(NULL);
 }
 
 Request::~Request()
@@ -277,7 +290,7 @@ std::string Request::getTr_enc()
     return this->tr_enc;
 }
 
-std::string Request::getBody()
+std::vector<unsigned char> & Request::getBody()
 {
     return this->body;
 }
@@ -302,7 +315,7 @@ int Request::getContent_length()
     return this->content_length;
 }
 
-void Request::setBody(std::string body)
+void Request::setBody(std::vector<unsigned char>  body)
 {
     this->body = body;
 }

@@ -45,34 +45,44 @@ void    MultiPlexing::addClient(int sock, struct sockaddr_in address, Server & s
 
 void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
 {
-    char buffer[1000];
+    unsigned char buffer[1000];
     int rc = 0;
-    std::istringstream iss;
-    std::string hello;
+    std::vector<unsigned char> pattern;
+    pattern.push_back('\r');
+    pattern.push_back('\n');
+    pattern.push_back('\r');
+    pattern.push_back('\n');
     bzero(buffer, 1000);
-    if((rc = read(client.first.getSocket_fd(), &buffer[0], sizeof(buffer))) < 0)
+    if((rc = read(client.first.getSocket_fd(), buffer, 999)) < 0)
     {
         perror("  read() failed");
+
         client.first.setClose_conn(1);
         return ;
     }
 
     if (rc == 0) 
     {
+
         client.first.setClose_conn(1);
         return ;
     }
-    buffer[rc] = '\0';
-    client.first.setrequest(client.first.getrequest() + buffer);
+    buffer[999] = '\0';
+    client.first.getrequest().insert(client.first.getrequest().end(), buffer, buffer + rc);
     client.first.getReq().setStarted(time(NULL));
-    if (client.first.getrequest().find("\r\n\r\n") != std::string::npos)
+    auto pos = std::search(client.first.getrequest().begin(), client.first.getrequest().end(), pattern.begin(), pattern.end());
+    
+    if (pos != client.first.getrequest().end())
     {
         if (!client.first.getReq().getHeaders().empty())
-            client.first.getReq().setBody(client.first.getReq().getBody() + buffer);
+        {
+            client.first.getReq().getBody().clear();
+            client.first.getReq().getBody().insert(client.first.getReq().getBody().end(), pos + 4, client.first.getrequest().end());
+        }
         if (client.first.getReq().getHeaders().empty())
             try
             {
-                Request req(client.first.getrequest().c_str());
+                Request req(client.first.getrequest());
                 client.first.setReq(req);
             }
             catch(const std::exception& e)
@@ -124,25 +134,18 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
                     std::cout << "baaad " << e.what() << std::endl;
                     exit(0);
                 }
+                
+
                 client.first.setread_done(1);
             }
-        // print parsed request
-        {
-            std::cout << "Request: " << client.first.getReq().getMethod() << " " << client.first.getReq().getPath() << " " << client.first.getReq().getVersion() << std::endl;
-            std::cout << "Headers: " << std::endl;
-            for (std::map<std::string, std::string>::const_iterator it = client.first.getReq().getHeaders().begin(); it != client.first.getReq().getHeaders().end(); it++)
-            {
-                const std::string& key = it->first;
-                const std::string& value = it->second;
-                std::cout << "key: " << key << " value: " << value << std::endl;
-            }
-            // std::cout << "Body: " << client.first.getReq().getBody() << std::endl;
-        }
         if (!client.first.getReq().getHeaders().empty() && client.first.getReq().getHeaders().find("Content-Length") != client.first.getReq().getHeaders().end())
         {
-            if (client.first.getReq().getBody().length() >= stoi(client.first.getReq().getHeaders().find("Content-Length")->second))
+            std::cout << "exp: " << client.first.getReq().getHeaders().find("Content-Length")->second << " got: " << client.first.getReq().getBody().size() << std::endl;
+            // std::cout << "Body: " << client.first.getReq().getBody() << std::endl;
+            
+            if (client.first.getReq().getBody().size() >= stoi(client.first.getReq().getHeaders().find("Content-Length")->second))
             {
-                if (client.first.getReq().getBody().length() > stoi(client.first.getReq().getHeaders().find("Content-Length")->second))
+                if (client.first.getReq().getBody().size() > stoi(client.first.getReq().getHeaders().find("Content-Length")->second))
                     client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 404 Bad Request\r\n\r\n", 32));
                 client.first.setread_done(1);
             }
@@ -151,22 +154,27 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
             return ;
 
         }
-        if (!client.first.getReq().getHeaders().empty() && client.first.getReq().getHeaders().find("Transfer-Encoding") != client.first.getReq().getHeaders().end())
-        {
-            if (client.first.getrequest().find("0\r\n\r\n") != std::string::npos)
-            {
-                if (client.first.getrequest().find("0\r\n\r\n") + 5 != client.first.getrequest().length())
-                {
-                    client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 404 Bad Request\r\n\r\n", 32));
-                }
-                client.first.setread_done(1);
-            }
-            else
-                client.first.setread_done(0);
-            return ;
-        }
+        // if (!client.first.getReq().getHeaders().empty() && client.first.getReq().getHeaders().find("Transfer-Encoding") != client.first.getReq().getHeaders().end())
+        // {
+        //     if (client.first.getrequest().find("0\r\n\r\n") != std::string::npos)
+        //     {
+        //         if (client.first.getrequest().find("0\r\n\r\n") + 5 != client.first.getrequest().size())
+        //         {
+        //             client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 404 Bad Request\r\n\r\n", 32));
+        //         }
+        //         std::cout << "here6" << std::endl;
+
+        //         client.first.setread_done(1);
+        //     }
+        //     else
+        //         client.first.setread_done(0);
+        //     return ;
+        // }
         if (client.first.getReq().getMethod() != "" && client.first.getReq().getMethod() != "POST")
+        {
             client.first.setread_done(1);
+
+        }
     }
     else
     {
@@ -325,8 +333,6 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
                     clients.erase(clients.begin() + i);
                     i--;
                 }
-                if (!clients[i].first.getWrite_done())
-                    flag = 1;
             }
             if (!flag)
             {
@@ -349,7 +355,7 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
                 if (!clients[i].first.getClose_conn() && clients[i].first.getread_done())
                 {
                     std::cout << "fd in write " << clients[i].first.getSocket_fd() << std::endl;
-                    clients[i].first.setrequest("");
+                    clients[i].first.getrequest().clear();
                     FD_SET(clients[i].first.getSocket_fd(), &io.writefds);
                 }
             }

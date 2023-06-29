@@ -35,7 +35,7 @@ class Socket{
         int close_conn;
         int write_done;
         int read_done;
-        std::string request;
+        std::vector<unsigned char> request;
         int already_bind;
     public:
         Socket() ;
@@ -56,9 +56,9 @@ class Socket{
         void setClose_conn(const int close_conn);
         void setWrite_done(int d);
         void setread_done(int d);
-        void setrequest(std::string req);
+        void setrequest(std::vector<unsigned char> req);
         
-        std::string getrequest();
+        std::vector<unsigned char>& getrequest();
         int getread_done();
         int  getWrite_done();
         void setSocket_fd(int &socket_fd);
