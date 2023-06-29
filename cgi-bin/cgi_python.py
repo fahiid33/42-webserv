@@ -6,6 +6,8 @@ import cgitb
 import sys
 import io
 
+
+open('/home/bufallo/weba/Upload/kk', 'wb')
 cgitb.enable()
 
 try:
@@ -42,9 +44,9 @@ print("</body></html>")
 # import os
 # import sys
 
-# Get the content length from the environment variables
+# # Get the content length from the environment variables
 
-# Read the specified number of bytes from stdin
+# # Read the specified number of bytes from stdin
 
 # try:
 #     content_length = int(os.environ.get('CONTENT_LENGTH', 0))
