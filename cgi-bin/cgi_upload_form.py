@@ -9,7 +9,7 @@ import sys
 import io
 
 
-open('/Users/hlachkar/weba/Upload/papa', 'wb')
+open('/home/bufallo/webserv/Upload/papa', 'wb')
 cgitb.enable()
 
 try:
@@ -33,7 +33,7 @@ if fileitem.filename:
     # Strip leading path from file name
     # to avoid directory traversal attacks
     fn = os.path.basename(fileitem.filename)
-    with open('/Users/hlachkar/weba/Upload/' + fn, 'wb') as f:
+    with open('/home/bufallo/webserv/Upload/' + fn, 'wb') as f:
         f.write(fileitem.file.read())
     message = f'The file "{fn}" was uploaded successfully'
 else:
