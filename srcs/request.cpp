@@ -91,7 +91,7 @@ void searchThrow(std::string &out, std::string &line, std::string const &search)
         line = line.substr(pos + search.length(), line.length() - 1);
     }
     else
-        throw std::invalid_argument("0");
+        throw std::invalid_argument("400");
 }
 
 void Request::parseFirstLine(std::string &line)
@@ -102,17 +102,17 @@ void Request::parseFirstLine(std::string &line)
     {
         std::cout << "method: " << method << std::endl;
         if (method == "PUT")
-            throw std::invalid_argument("10");
-        throw std::invalid_argument("8");
+            throw std::invalid_argument("200");
+        throw std::invalid_argument("501");
     }
     searchThrow(path, line, " ");
-    if (path.length() > 2048)
-        throw std::invalid_argument("0");
-    if (path.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%") != std::string::npos)
-        throw std::invalid_argument("0");
+    if (path.length() > 2083)
+        throw std::invalid_argument("414");
+    if (path.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=") != std::string::npos)
+        throw std::invalid_argument("400");
     searchThrow(version, line, "\r");
     if (version != "HTTP/1.1")
-        throw std::invalid_argument("2");
+        throw std::invalid_argument("505");
     if (path.find_last_of('/') != std::string::npos)
         this->file = path.substr(path.find_last_of('/') + 1, path.length() - 1);
     if (path.find_last_of('?') != std::string::npos)
@@ -131,12 +131,10 @@ void Request::ParseHeaders(std::istringstream &file)
     {
         key.clear();
         value.clear();
-        std::cout << "line: " << line << std::endl;
         searchThrow(key, line, ": ");
         searchThrow(value, line, "\r");
-        // hadi katfaili f aker line content-type dyal postman
         if (key == "Host" && value.empty()) // check against the server name
-            throw std::invalid_argument("0");
+            throw std::invalid_argument("400");
         else if (key == "Connection")
         {
             if (value == "keep-alive")
@@ -144,30 +142,36 @@ void Request::ParseHeaders(std::istringstream &file)
             else if (value == "close")
                 keepAlive = false;
             else
-                throw std::invalid_argument("0");
+                throw std::invalid_argument("400");
         }
-        else if (key == "Content-Length" && (value.empty() || value.find_first_not_of("0123456789") != std::string::npos)) // check the value against the server max_body size
+        else if (key == "Content-Length") // check the value against the server max_body size
         {
-            std::cout << "value: " << value << std::endl;
-            std::cout << "key: " << key << std::endl;
-            throw std::invalid_argument("0");
+            if (value.empty())
+                throw std::invalid_argument("411");
+            if (value.find_first_not_of("0123456789") != std::string::npos)
+                throw std::invalid_argument("400");
         }
         else if (key == "Transfer-Encoding")
         {
             if (value.empty())
-                throw std::invalid_argument("0");
+                throw std::invalid_argument("400");
             else if (key != "chunked")
-                throw std::invalid_argument("5");
+                throw std::invalid_argument("501");
         }
-        else if (key == "Content-Type" && value.find("multipart/form-data") == 0)
+        else if (key == "Content-Type")
         {
-            std::string chck;
-            std::string valos = value;
-            searchThrow(line, value, "; ");
-            searchThrow(chck, value, "=");
-            if (chck != "boundary")
-                throw std::invalid_argument("0");
-            value = valos;
+            if (value.empty())
+                throw std::invalid_argument("400");
+            else if (value.find("multipart/form-data") == 0)
+            {
+                std::string chck;
+                std::string valos = value;
+                searchThrow(line, value, "; ");
+                searchThrow(chck, value, "=");
+                if (chck != "boundary")
+                    throw std::invalid_argument("400");
+                value = valos;
+            }
         }
         else if (key == "Keep-Alive")
         {
@@ -175,26 +179,25 @@ void Request::ParseHeaders(std::istringstream &file)
             searchThrow(chck, value, "=");
             searchThrow(value, value, ", ");
             if (chck != "timeout"){
-                throw std::invalid_argument("0");
+                throw std::invalid_argument("400");
             }
             else if (value.find_first_not_of("0123456789") != std::string::npos)
-                throw std::invalid_argument("0");
+                throw std::invalid_argument("400");
             else
             {
                 keepAlive = true;
-                timeOut = atoi(value.c_str());
+                timeOut = stoi(value);
             }
         }
         this->headers.insert(std::make_pair(key, value));
     }
-    
     if (method == "POST" && (this->headers.find("Content-Length") == this->headers.end() && this->headers.find("Transfer-Encoding") == this->headers.end()))
-            throw std::invalid_argument("9");
+            throw std::invalid_argument("411");
     else if (method == "POST" && (this->headers.find("Content-Length") != this->headers.end() && this->headers.find("Transfer-Encoding") != this->headers.end()))
-        throw std::invalid_argument("0");
+        throw std::invalid_argument("400");
     if ((method == "GET" || method == "HEAD") && (this->headers.find("Content-Length") !=
     this->headers.end() || this->headers.find("Transfer-Encoding") != this->headers.end()))
-        throw std::invalid_argument("9");
+        throw std::invalid_argument("400");
 }
 
 Request::Request(std::vector<unsigned char> request)
@@ -225,7 +228,7 @@ Request::Request(std::vector<unsigned char> request)
         this->body = body;}
     //// end of body
     if ((method == "GET" || method == "HEAD") && !body.empty())
-        throw std::invalid_argument("9");
+        throw std::invalid_argument("400");
     started = time(NULL);
 }
 

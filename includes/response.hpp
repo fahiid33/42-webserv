@@ -40,6 +40,8 @@ class Response
         int is_open;
         std::pair<std::string, u_long> _resp;
         u_long _offset;
+        std::map<std::string, std::string> headers;
+        std::map<int, std::string> errorMessages;
 
     public:
         Response();
@@ -47,6 +49,11 @@ class Response
         Response(Request & req, Server & server);
         ~Response();
 
+        std::string toString() const;
+        void setHeader(const std::string& key, const std::string& value);
+        void generateErrorPage(int code);
+        void initErrorMessages();
+        std::map<std::string, std::string> &getHeaders();
         void clear();
         Response & operator=(const Response &resp);
         u_long getOffset();

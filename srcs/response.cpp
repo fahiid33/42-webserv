@@ -3,12 +3,18 @@
 #include "../includes/server.hpp"
 #define CRLF "\r\n"
 
-Response::Response() : _offset(0), fd(0), is_open(0), _content_type(""), file(""), _resp(std::make_pair("", 0)) {
+Response::Response() : _offset(0), fd(0), is_open(0), _content_type(""), file(""), _resp(std::make_pair("", 0)), _status_code(0) {
     mime_types = mime_types_init();
+    initErrorMessages();
 }
 
 Response::~Response() {
     this->clear();
+}
+
+std::map<std::string, std::string> &Response::getHeaders()
+{
+    return headers;
 }
 
 Response::Response(const Response &resp)
@@ -20,6 +26,9 @@ Response::Response(const Response &resp)
     this->_resp = resp._resp;
     this->_content_type = resp._content_type;
     this->mime_types = resp.mime_types;
+    this->_status_code = resp._status_code;
+    this->headers = resp.headers;
+    this->errorMessages = resp.errorMessages;
 }
 
 Response & Response::operator=(const Response &resp)
@@ -42,6 +51,7 @@ void Response::clear()
     this->file = "";
     this->_resp = std::make_pair("", 0);
     this->_content_type = "";
+    this->_status_code = 0;
 }
 
 size_t last_char_pos(std::string str, std::string str2)
@@ -191,14 +201,15 @@ void Response::HandleGet(Request &req, Location &loc, Server &server)
     std::string contentType = getContentType(request_resource, mimeTypes);
     std::vector<std::string>::iterator it;
 
-    _resp.first = "HTTP/1.1 200 OK\nContent-Type: ";
-    _resp.first += contentType;
+    // _resp.first = "HTTP/1.1 200 OK\nContent-Type: ";
+    // _resp.first += contentType;
+    setHeader("Status", "200 OK");
+    setHeader("Content-Type", contentType);
     std::ifstream file;
     // std::cout << "request_resource: " << request_resource << std::endl;
     if (!file_exists(request_resource.c_str()))
     {
-        _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
-        _resp.second = 84;
+        generateErrorPage(404);
         return ;
     }
     if (isDirectory(request_resource.c_str()))
@@ -206,8 +217,8 @@ void Response::HandleGet(Request &req, Location &loc, Server &server)
         // check if request_resource has / at the end
         if (request_resource[request_resource.length() - 1] != '/')
         {
-            _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + req.getPath() + req.getFile() + "/\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
-            _resp.second = 84;
+            // should update the page header to redirect to the same page with / at the end
+            generateErrorPage(301);
             return ;
             // _resp.first = "HTTP/1.1 403 Forbidden\nContent-Type: text/html\nContent-Length: 13\n\n403 forbidden";
             // _resp.second = 84;
@@ -232,20 +243,14 @@ void Response::HandleGet(Request &req, Location &loc, Server &server)
             }
             else
             {
-                _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 Not Found";
-                _resp.second = 84;
+                generateErrorPage(403);
                 return ;
             }
         }
     }
     file.open(request_resource, std::ios::binary | std::ios::ate);
-    std::string str;
-    _resp.first += "\nConnection: Keep-Alive";
-    _resp.first += "\nContent-Length: ";
-    _resp.second = file.tellg();
-    file.seekg(0, std::ios::beg);
-    _resp.first += std::to_string(_resp.second);
-    _resp.first += "\n\n";
+    setHeader("Content-Length", std::to_string(file.tellg()));
+    setHeader("Connection", "Keep-Alive");
     this->file = request_resource;
     // std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     // _resp.first += content + "\n";
@@ -447,10 +452,72 @@ std::string  Response::getContentType(const std::string& file , std::map<std::st
     return "text/html";
 }
 
+std::string Response::toString() const {
+    std::ostringstream oss;
+    oss << "HTTP/1.1 " << headers.at("Status") << "\r\n";
+    for (const auto& pair : headers) {
+        oss << pair.first << ": " << pair.second << "\r\n";
+    }
+    oss << "\r\n";
+    oss << _resp.first;
+    return oss.str();
+}
+
+void Response::generateErrorPage(int code)
+{
+    auto it = errorMessages.find(code);
+    if (it != errorMessages.end()) {
+        std::string errorMessage = it->second;
+        std::string errorPage = "<!DOCTYPE html>\n";
+        errorPage += "<html>\n";
+        errorPage += "<head>\n";
+        errorPage += "<title>Error " + std::to_string(code) + ": " + errorMessage + "</title>\n";
+        errorPage += "<style>\n";
+        errorPage += "body {font-family: Arial, sans-serif; margin: 0; padding: 20px;}\n";
+        errorPage += "h1 {font-size: 24px;}\n";
+        errorPage += "p {font-size: 16px;}\n";
+        errorPage += "</style>\n";
+        errorPage += "</head>\n";
+        errorPage += "<body>\n";
+        errorPage += "<h1>Error " + std::to_string(code) + ": " + errorMessage + "</h1>\n";
+        errorPage += "<p>" + errorMessage + "</p>\n";
+        errorPage += "</body>\n";
+        errorPage += "</html>";
+
+        this->setHeader("Status", std::to_string(code) + " " + errorMessage);
+        this->setHeader("Content-Type", "text/html");
+        _resp.first = errorPage;
+    }
+    else {
+        this->setHeader ("Status", "500 Internal Server Error");
+        this->setHeader ("Content-Type", "text/html");
+        _resp.first = "<!DOCTYPE html>\n";
+        _resp.first += "<html>\n";
+        _resp.first = "500 internal server error";
+        _resp.first += "</html>\n";
+    }
+}
+
+void Response::initErrorMessages()
+{
+    errorMessages[400] = "Bad Request";
+    errorMessages[414] = "Request-URI Too Large";
+    errorMessages[505] = "HTTP Version Not Supported";
+    errorMessages[501] = "Not Implemented";
+    errorMessages[411] = "Length Required";
+}
+
 void  Response::prepare_response(Request & req, Server & server)
 {
     std::vector<Location>::iterator it = server.getLocations().begin();
     std::vector<Location>::iterator ite = server.getLocations().end();
+
+    if (_status_code != 0)
+    {
+        std::cout << "generate error page " << _status_code << std::endl;
+        generateErrorPage(_status_code);
+        return ;
+    }
 
     while (it != server.getLocations().end())
     {
@@ -477,18 +544,21 @@ void  Response::prepare_response(Request & req, Server & server)
         it = ite;
     if (it->getRedirection().first != "")
     {
+        std::cout << "redirection" << std::endl;
         _resp.first = "HTTP/1.1 301 Moved Permanently\nLocation: " + it->getRedirection().first + "\nContent-Type: text/html\nContent-Length: 13\n\n301 moved permanently";
         _resp.second = 84;
         return ;
     }
     if (std::find(it->getAllowedMethods().begin(), it->getAllowedMethods().end(), req.getMethod()) == it->getAllowedMethods().end())
     {
+        std::cout << "redirection" << std::endl;
         _resp.first = "HTTP/1.1 405 Method Not Allowed\nContent-Type: text/html\nContent-Length: 13\n\n405 method not allowed";
         _resp.second = 102;
         return ;
     }
     if (req.getMethod() == "GET")
     {
+
         HandleGet(req, *it, server);
     }
     else if (req.getMethod() == "POST")
@@ -499,4 +569,8 @@ void  Response::prepare_response(Request & req, Server & server)
     {
         HandleDelete(req, *it, server);
     }
+}
+
+void Response::setHeader(const std::string& key, const std::string& value) {
+    headers[key] = value;
 }

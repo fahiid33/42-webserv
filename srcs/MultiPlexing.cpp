@@ -42,30 +42,16 @@ void initializeRequest(Socket & client)
 {
     try
     {
+        std::cout << "initializeRequest" << std::endl;
         Request req(client.getrequest());
         client.setReq(req);
     }
     catch(const std::exception& e)
     {
-        // basic parser error handling
+        std::cerr << e.what() << '\n';
+        // basic header error handling
         // set the error status to handle the response later on prepare response
-        if(!strcmp(e.what(), "0"))
-            client.get_Resp().setStatusCode(400); // bad request
-        else if(!strcmp(e.what(), "2"))
-            client.get_Resp().setStatusCode((505)); // http version not supported ? fiha 3 error to be checked
-        else if(!strcmp(e.what(), "5"))
-            client.get_Resp().setStatusCode(501); // not implemented
-        else if(!strcmp(e.what(), "8"))
-            client.get_Resp().setStatusCode(405); // method not allowed || method not implemented ? should be handled using the location
-        else if(!strcmp(e.what(), "9"))
-            client.get_Resp().setStatusCode(411); // length required
-        else if(!strcmp(e.what(), "10"))
-            client.get_Resp().setResp(std::make_pair("HTTP/1.1 201 OK\r\n\r\n", 32));
-        else
-        {
-            std::cout << "baaad " << e.what() << std::endl;
-            exit(0);
-        }
+        client.get_Resp().setStatusCode(atoi(e.what()));
         client.setread_done(1);
     }
 }
@@ -157,7 +143,7 @@ void MultiPlexing::handleWriteData(Socket &sock)
     sock.setWrite_done(0);
     if (!sock.get_Resp().getIsOpen())
     {
-        rc = write(sock.getSocket_fd() , sock.get_Resp().getResp().first.c_str(), sock.get_Resp().getResp().first.length());
+        rc = write(sock.getSocket_fd() , sock.get_Resp().toString().c_str(), sock.get_Resp().toString().length());
         if (sock.get_Resp().getFile() != "")
         {
             std::cout << "file " << sock.get_Resp().getFile() << " opened" << std::endl;
@@ -174,10 +160,10 @@ void MultiPlexing::handleWriteData(Socket &sock)
             sock.setWrite_done(1);
         return ;
     }
-    if ((sock.get_Resp().getOffset() + 1024) > sock.get_Resp().getResp().second && sock.get_Resp().getFile() != "")
+    if ((sock.get_Resp().getOffset() + 1024) > stoi(sock.get_Resp().getHeaders().find("Content-Length")->second) && sock.get_Resp().getFile() != "")
     {
-        read(sock.get_Resp().getFd(), buffer, sock.get_Resp().getResp().second - sock.get_Resp().getOffset());
-        rc = write(sock.getSocket_fd() , buffer , sock.get_Resp().getResp().second - sock.get_Resp().getOffset());
+        read(sock.get_Resp().getFd(), buffer, stoi(sock.get_Resp().getHeaders().find("Content-Length")->second) - sock.get_Resp().getOffset());
+        rc = write(sock.getSocket_fd() , buffer , stoi(sock.get_Resp().getHeaders().find("Content-Length")->second) - sock.get_Resp().getOffset());
         sock.get_Resp().setOffset(sock.get_Resp().getOffset() + rc);
         std::cout << GREEN << "file " << sock.get_Resp().getFile() << " done" << std::endl;
         sock.setWrite_done(1);
@@ -259,8 +245,7 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
 
             if (FD_ISSET(clients[i].first.getSocket_fd(), &io.write_cpy))
             {
-                if (clients[i].first.get_Resp().getResp().first == "")
-                    clients[i].first.get_Resp().prepare_response(clients[i].first.getReq(), clients[i].second);
+                clients[i].first.get_Resp().prepare_response(clients[i].first.getReq(), clients[i].second);
                 handleWriteData(clients[i].first);
                 if (clients[i].first.getWrite_done())
                 {
