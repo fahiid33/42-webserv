@@ -50,45 +50,15 @@ void initializeRequest(Socket & client)
         // basic parser error handling
         // set the error status to handle the response later on prepare response
         if(!strcmp(e.what(), "0"))
-        {
-            client.get_Resp().setResp(std::make_pair("HTTP/1.1 404 Bad Request\r\n\r\n", 32));
-        }
-        else if(!strcmp(e.what(), "1"))
-        {
-            client.get_Resp().setResp(std::make_pair("HTTP/1.1 414 Request-URI Too Long\r\n\r\n", 41));
-        }
+            client.get_Resp().setStatusCode(400); // bad request
         else if(!strcmp(e.what(), "2"))
-        {
-            client.get_Resp().setResp(std::make_pair("HTTP/1.1 403 Bad Request\r\n\r\n", 32));
-        }
-        else if(!strcmp(e.what(), "3"))
-        {
-            client.get_Resp().setResp(std::make_pair("HTTP/1.1 405 Method Not Allowed\r\n\r\n", 39));
-        }
-        else if(!strcmp(e.what(), "4"))
-        {
-            client.get_Resp().setResp(std::make_pair("HTTP/1.1 505 HTTP Version Not Supported\r\n\r\n", 47));
-        }
+            client.get_Resp().setStatusCode((505)); // http version not supported ? fiha 3 error to be checked
         else if(!strcmp(e.what(), "5"))
-        {
-            client.get_Resp().setResp(std::make_pair("HTTP/1.1 501 Not Implemented\r\n\r\n", 36));
-        }
-        else if(!strcmp(e.what(), "6"))
-        {
-            client.get_Resp().setResp(std::make_pair("HTTP/1.1 500 Internal Server Error\r\n\r\n", 42));
-        }
-        else if(!strcmp(e.what(), "7"))
-        {
-            client.get_Resp().setResp(std::make_pair("HTTP/1.1 411 Length Required\r\n\r\n", 36));
-        }
+            client.get_Resp().setStatusCode(501); // not implemented
         else if(!strcmp(e.what(), "8"))
-        {
-            client.get_Resp().setResp(std::make_pair("HTTP/1.1 405 method not allowed\r\n\r\n", 39));
-        }
+            client.get_Resp().setStatusCode(405); // method not allowed || method not implemented ? should be handled using the location
         else if(!strcmp(e.what(), "9"))
-        {
-            client.get_Resp().setResp(std::make_pair("HTTP/1.1 402 Bad Request\r\n\r\n", 32));
-        }
+            client.get_Resp().setStatusCode(411); // length required
         else if(!strcmp(e.what(), "10"))
             client.get_Resp().setResp(std::make_pair("HTTP/1.1 201 OK\r\n\r\n", 32));
         else
@@ -132,6 +102,8 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
         // perhaps the body is in the first chunk so we check if the body is complete, also if it another chunk we perform the same check
         if (!client.first.getReq().getHeaders().empty() && client.first.getReq().getHeaders().find("Content-Length") != client.first.getReq().getHeaders().end())
         {
+            // check if the body exceed the max length in the server...
+
             if (client.first.getReq().getBody().size() >= stoi(client.first.getReq().getHeaders().find("Content-Length")->second))
             {
                 if (client.first.getReq().getBody().size() > stoi(client.first.getReq().getHeaders().find("Content-Length")->second))

@@ -72,6 +72,16 @@ void Response::setOffset(u_long offset)
     _offset = offset;
 }
 
+int Response::getStatusCode()
+{
+    return _status_code;
+}
+
+void Response::setStatusCode(int status_code)
+{
+    _status_code = status_code;
+}
+
 int Response::getIsOpen()
 {
     return is_open;
@@ -250,39 +260,7 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
         _resp.second = 84;
         return ;
     }
-    // 201 created
     std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
-    
-    /////////////////////////////
-    // std::string new_file(request_resource);
-    // // create the file
-    // open(new_file.c_str(), O_CREAT | O_WRONLY, 0777);
-
-    // std::ofstream out(new_file, std::ios::out | std::ios::binary);
-    // out << req.getBody();
-    // out.close();
-    // std::string len = std::to_string(req.getBody().length());
-    // _resp.first = "HTTP/1.1 200 OK" CRLF "Connection: close" CRLF
-    // "Content-Type: text/html; charset=UTF-8" CRLF "Content-Length: " + len + CRLF CRLF "200 OK";
-    // _resp.second = 84;
-
-    /////////////////////////////
-
-
-    // out << in.rdbuf();
-    // in.close();
-    // out.close();
-    // std::cout << "here" << std::endl;
-    // remove(req.get_body().c_str());
-    // just doing some tests khliha commented
-    
-    // if (file_exists(request_resource.c_str()))
-    // {
-    //     _resp.first = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: 13\n\n404 not found";
-    //     _resp.second = 84;
-    //     return ;
-    // }
-
 
     server.get_cgi().initEnv(req, "localhost", loc.getRoot());
 
@@ -330,9 +308,7 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
     close(fdin[0]);
 
     // Write the POST body to the input pipe
-    // std::string body(req.getBody().begin(), req.getBody().end());
     
-    // int rc = write(fdin[1], body.c_str(), req.getBody().size());
     int rc = write(fdin[1], req.getBody().data(), req.getBody().size());
     if (rc != req.getBody().size()) {
         perror("error write: ");
@@ -359,9 +335,7 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
 
     _resp.first += output.str();
     _resp.second = _resp.first.length();
-    
-    // std::cout << "output: " << output.str() << "length: " << _resp.second << std::endl;
-    return ;
+
     // std::vector<std::string>::iterator it;
     // if (isDirectory(request_resource.c_str()))
     // {
@@ -392,7 +366,7 @@ void Response::HandlePost(Request &req, Location &loc, Server &server)
     //     _resp.second = 84;
     //     return ;
     // }
-
+    return ;
 }
 
 void Response::HandleDelete(Request &req, Location &loc, Server &Server)
@@ -463,9 +437,10 @@ std::string  Response::getContentType(const std::string& file , std::map<std::st
     if (dotPos != std::string::npos) {
         std::string extension = file.substr(dotPos + 1);
         std::map<std::string, std::string>::iterator it = mime_t.find(extension);
-        if (it != mime_t.end()) {
+        if (it != mime_t.end())
             return it->second;
-        }
+        else
+            return "octet-stream";
     }
     if (file == "")
         return "text/html";

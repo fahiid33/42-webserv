@@ -34,6 +34,7 @@ class Response
     private:
         std::map<std::string, std::string> mime_types;
         std::string _content_type;
+        int _status_code;
         int fd;
         std::string file;
         int is_open;
@@ -51,8 +52,10 @@ class Response
         u_long getOffset();
         void setOffset(u_long offset);
         int getIsOpen();
+        int getStatusCode();
         void setIsOpen(int is_open);
         void setFd(int fd);
+        void setStatusCode(int status_code);
         int getFd();
         std::string getFile();
         void setFile(std::string file);

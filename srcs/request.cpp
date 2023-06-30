@@ -112,7 +112,7 @@ void Request::parseFirstLine(std::string &line)
         throw std::invalid_argument("0");
     searchThrow(version, line, "\r");
     if (version != "HTTP/1.1")
-        throw std::invalid_argument("0");
+        throw std::invalid_argument("2");
     if (path.find_last_of('/') != std::string::npos)
         this->file = path.substr(path.find_last_of('/') + 1, path.length() - 1);
     if (path.find_last_of('?') != std::string::npos)
@@ -188,10 +188,10 @@ void Request::ParseHeaders(std::istringstream &file)
         this->headers.insert(std::make_pair(key, value));
     }
     
-    if (method == "POST" && ((this->headers.find("Content-Length") == this->headers.end() &&
-    this->headers.find("Transfer-Encoding") == this->headers.end()) || (this->headers.find("Content-Length") !=
-    this->headers.end() && this->headers.find("Transfer-Encoding") != this->headers.end())))
+    if (method == "POST" && (this->headers.find("Content-Length") == this->headers.end() && this->headers.find("Transfer-Encoding") == this->headers.end()))
             throw std::invalid_argument("9");
+    else if (method == "POST" && (this->headers.find("Content-Length") != this->headers.end() && this->headers.find("Transfer-Encoding") != this->headers.end()))
+        throw std::invalid_argument("0");
     if ((method == "GET" || method == "HEAD") && (this->headers.find("Content-Length") !=
     this->headers.end() || this->headers.find("Transfer-Encoding") != this->headers.end()))
         throw std::invalid_argument("9");
