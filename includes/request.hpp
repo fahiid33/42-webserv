@@ -63,12 +63,13 @@ class Request {
         int         getContent_length();
         std::string getTr_enc();
         std::string getRequest();
-        std::vector<unsigned char> & getBody();
+        std::vector<unsigned char> const & getBody() const;
+        void setBody(const std::vector<unsigned char> &body);
         std::map<std::string, std::string> const & getHeaders() const;
 
         void setStarted(time_t started);
         void setRequest(std::string request);
-        void setBody(std::vector<unsigned char> body);
+        void parseChunkedBody(std::vector<unsigned char> const & request);
 
         void parseFirstLine(std::string &line);
         void ParseHeaders(std::istringstream &file);

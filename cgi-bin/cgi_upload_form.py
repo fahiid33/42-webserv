@@ -39,7 +39,6 @@ if fileitem.filename:
 else:
     message = 'No file was uploaded'
 
-print("Content-Type: text/html\n")
 print("<html><body>")
 print(f"<p>{message}</p>")
 print("</body></html>")

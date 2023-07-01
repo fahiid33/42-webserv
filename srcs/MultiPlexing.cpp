@@ -61,6 +61,8 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
     unsigned char buffer[1000];
     int rc = 0;
     std::vector<unsigned char> pattern;
+    pattern.clear();
+    pattern.push_back('0');
     pattern.push_back('\r');
     pattern.push_back('\n');
     pattern.push_back('\r');
@@ -69,21 +71,17 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
     if (!reader(buffer, client.first))
         return ;
     //search for the end of the header
-/*1*/std::vector<unsigned char>::iterator pos = std::search(client.first.getrequest().begin(), client.first.getrequest().end(), pattern.begin(), pattern.end());
+/*1*/std::vector<unsigned char>::iterator pos = std::search(client.first.getrequest().begin(), client.first.getrequest().end(), pattern.begin()+1, pattern.end());
 
     if (pos != client.first.getrequest().end())
     {
         if (!client.first.getReq().getHeaders().empty())
-        {
             // get the body
-/*2*/       client.first.getReq().getBody().clear();
-/*3*/       client.first.getReq().getBody().insert(client.first.getReq().getBody().end(), pos + 4, client.first.getrequest().end());
+            client.first.getReq().setBody(std::vector<unsigned char>(pos + 4, client.first.getrequest().end()));
             //----can be optimized 1 & 2 & 3
-        }
         else
         // if the header not inizialized yet
             initializeRequest(client.first);
-
 
         // perhaps the body is in the first chunk so we check if the body is complete, also if it another chunk we perform the same check
         if (!client.first.getReq().getHeaders().empty() && client.first.getReq().getHeaders().find("Content-Length") != client.first.getReq().getHeaders().end())
@@ -103,22 +101,23 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
 
         // if the body is chunked we check handle it in a function, just perform some modifs on body after reading it
 
-        // if (!client.first.getReq().getHeaders().empty() && client.first.getReq().getHeaders().find("Transfer-Encoding") != client.first.getReq().getHeaders().end())
-        // {
-        //     if (client.first.getrequest().find("0\r\n\r\n") != std::string::npos)
-        //     {
-        //         if (client.first.getrequest().find("0\r\n\r\n") + 5 != client.first.getrequest().size())
-        //         {
-        //             client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 404 Bad Request\r\n\r\n", 32));
-        //         }
-        //         std::cout << "here6" << std::endl;
-
-        //         client.first.setread_done(1);
-        //     }
-        //     else
-        //         client.first.setread_done(0);
-        //     return ;
-        // }
+        if (!client.first.getReq().getHeaders().empty() && client.first.getReq().getHeaders().find("Transfer-Encoding") != client.first.getReq().getHeaders().end())
+        {
+            std::cout << "again" << std::endl;
+            if ((pos = std::search(client.first.getrequest().begin(), client.first.getrequest().end(), pattern.begin(), pattern.end()) ) != client.first.getrequest().end())
+            {
+                if (pos + 5 != client.first.getrequest().end())
+                {
+                    client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 404 Bad Request\r\n\r\n", 32));
+                }
+                std::cout << "here6" << std::endl;
+                client.first.getReq().parseChunkedBody(client.first.getReq().getBody());
+                client.first.setread_done(1);
+            }
+            else
+                client.first.setread_done(0);
+            return ;
+        }
 
         // if the body is not chunked neither with Content-Lenght and the header is complete we set the read_done flag to 1
         // GET and DELETE methods generally don't have a body: no chunked, no Content-Length
@@ -206,6 +205,7 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
         {
             for (int i = 0; i < clients.size(); i++)
             {
+                std::cout << clients[i].first.getReq().getConn() << " " << clients[i].first.getReq().getTimeOut() << " " << time(NULL) - clients[i].first.getReq().getStarted() << std::endl;
                 if ((clients[i].first.getClose_conn() || !clients[i].first.getReq().getConn() || (clients[i].first.getReq().getConn() &&
                 (time(NULL) - clients[i].first.getReq().getStarted() >= clients[i].first.getReq().getTimeOut()))))
                 {
@@ -213,14 +213,14 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
                     // remove the socket fd from the sets : handle error "bad file descriptor"
                     FD_CLR(clients[i].first.getSocket_fd(), &io.writefds);
                     FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
-                    std::cout << RED << "close socket" << std::endl;
+                    std::cout << RED << "close socket" << clients[i].first.getSocket_fd() << std::endl;
                     close(clients[i].first.getSocket_fd());
                     clients[i].first.clear();
                     clients.erase(clients.begin() + i);
                     i--;
                 }
             }
-            printf("select() timed out.  End program.\n");
+            printf("select() == %d timed out.  End program.\n", rc);
             continue;
         }
         // Check for new connections
@@ -237,7 +237,6 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
                 handleReadData(clients[i]);
                 if (!clients[i].first.getClose_conn() && clients[i].first.getread_done())
                 {
-                    std::cout << "fd in write " << clients[i].first.getSocket_fd() << std::endl;
                     clients[i].first.getrequest().clear();
                     FD_SET(clients[i].first.getSocket_fd(), &io.writefds);
                 }
@@ -251,9 +250,12 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
                 {
                     clients[i].first.setWrite_done(0);
                     FD_CLR(clients[i].first.getSocket_fd(), &io.writefds);
+                    // FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
+                    // close(clients[i].first.getSocket_fd());
                     if (clients[i].first.get_Resp().getFile() != "")
                         close(clients[i].first.get_Resp().getFd());
                     clients[i].first.clear();
+                    // clients.erase(clients.begin() + i);
                 }
             }
             if (clients[i].first.getClose_conn())
@@ -290,6 +292,7 @@ void    MultiPlexing::handleNewConnection(Server & server, Clients & clients)
         perror("In fcntl");
         exit(EXIT_FAILURE);
     }
+    std::cout << "New connection , socket fd is " << new_socket << " , ip is : " << inet_ntoa(address.sin_addr) << " , port : " << ntohs(address.sin_port) << std::endl;
     FD_SET(new_socket, &io.readfds);
     if (new_socket > max_sd)
         max_sd = new_socket;

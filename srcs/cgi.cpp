@@ -33,7 +33,15 @@ void Cgi::initEnv(Request const & req, std::string const & server_name, std::str
 //      HTTP_USER_AGENT: curl/7.88.1
 //          HTTP_ACCEPT: */*
     if (req.getHeaders().find("Content-Length") != req.getHeaders().end())
+    {
+        std::cout <<  "oh no" << std::endl;
         this->env["CONTENT_LENGTH"] = req.getHeaders().find("Content-Length")->second;
+    }
+    else
+    {
+        std::cout <<  req.getBody().size() << std::endl;
+        this->env["CONTENT_LENGTH"] = std::to_string(req.getBody().size());
+    }
     if (req.getHeaders().find("User-Agent") != req.getHeaders().end())
         this->env["HTTP_USER_AGENT"] = req.getHeaders().find("User-Agent")->second;
     if (req.getHeaders().find("Content-Type") != req.getHeaders().end())

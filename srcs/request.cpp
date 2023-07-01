@@ -1,4 +1,3 @@
-
 #include "../includes/request.hpp"
 
 Request::Request()
@@ -18,7 +17,7 @@ Request::Request()
     this->headers.clear();
     this->timeOut = 30;
     this->keepAlive = true;
-    this->started = 0;
+    this->started = time(NULL);
 }
 
 void Request::clear()
@@ -37,7 +36,7 @@ void Request::clear()
     this->keepAlive = true;
     this->body.clear();
     this->conn = "";
-    this->started = 0;
+    this->started = time(NULL);
     this->timeOut = 30;
 }
 
@@ -103,7 +102,7 @@ void Request::parseFirstLine(std::string &line)
         std::cout << "method: " << method << std::endl;
         if (method == "PUT")
             throw std::invalid_argument("200");
-        throw std::invalid_argument("501");
+        throw std::invalid_argument("405");
     }
     searchThrow(path, line, " ");
     if (path.length() > 2083)
@@ -155,8 +154,10 @@ void Request::ParseHeaders(std::istringstream &file)
         {
             if (value.empty())
                 throw std::invalid_argument("400");
-            else if (key != "chunked")
+            else if (value != "chunked")
+            {
                 throw std::invalid_argument("501");
+            }
         }
         else if (key == "Content-Type")
         {
@@ -293,7 +294,7 @@ std::string Request::getTr_enc()
     return this->tr_enc;
 }
 
-std::vector<unsigned char> & Request::getBody()
+std::vector<unsigned char> const & Request::getBody() const
 {
     return this->body;
 }
@@ -318,7 +319,43 @@ int Request::getContent_length()
     return this->content_length;
 }
 
-void Request::setBody(std::vector<unsigned char>  body)
+void Request::setBody(const std::vector<unsigned char> & body)
 {
     this->body = body;
+}
+
+
+void Request::parseChunkedBody(std::vector<unsigned char> const & request) {
+
+    std::vector<unsigned char> pattern;
+    std::vector<unsigned char> newBody;
+    pattern.clear();
+    newBody.clear();
+    pattern.push_back('\r');
+    pattern.push_back('\n');
+
+    std::vector<unsigned char>::const_iterator pos = request.begin();
+    std::vector<unsigned char>::const_iterator end = request.end();
+
+    std::stringstream ss;
+    int chunkSize = 0;
+    // std::cout << request.data() << std::endl;
+    while (pos != request.end() - 5) {
+        end = std::search(pos, request.end(), pattern.begin(), pattern.end());
+        ss << std::hex << std::string(pos, end);
+        ss >> chunkSize;
+
+        std::cout << "Chunk size: " << chunkSize << std::endl;
+
+        ss.clear();
+        ss.str(std::string());
+
+        pos = end + 2;
+        end = pos + chunkSize;
+        std::cout << "Chunk data: " << std::string(pos, end) << std::endl;
+        newBody.insert(newBody.end(), pos, end);
+        pos = end + 2;
+    }
+    this->body = newBody;
+    // std::cout << "Chunked body: " << std::string(request.begin(), request.end()) << std::endl;
 }
