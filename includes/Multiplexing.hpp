@@ -51,7 +51,7 @@ class MultiPlexing
         MultiPlexing();
         ~MultiPlexing();
 
-        void setup_server(std::vector<Server> &servers);
+        void setup_server(std::unordered_map<int, std::vector<Server> > & servers);
         int  getMaxSd();
         void setMaxSd(int max_sd);
         void handleNewConnection(Server & server, std::vector<std::pair <Socket, Server> > & clients);
@@ -59,8 +59,8 @@ class MultiPlexing
         const MultiPlexing::Clients & getCLients() const;
 
         void addClient(int sock, struct sockaddr_in address,Server & server);
-        void    CreateServerSockets(std::vector<Server>& servers);  
+        void    CreateServerSockets(Server& servers);  
         void setClients(Clients & client);
-        void handleReadData(std::pair <Socket, Server> &client, std::vector<Server> &servers);
+        void handleReadData(std::pair <Socket, Server> &client, std::unordered_map<int, std::vector<Server> > & servers);
         void handleWriteData(Socket &sock);
 };

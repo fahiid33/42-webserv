@@ -30,7 +30,7 @@ class Server;
 class Config
 {
     private:
-        std::unordered_map < size_t, std::vector<Server> > _Servers;
+        std::unordered_map < int, std::vector<Server> > _Servers;
         std::string _FilePath;
         std::ifstream _Configfile;
     public:
@@ -38,7 +38,7 @@ class Config
         Config(std::string FilePath);
         ~Config();
         void parse_config();
-        std::unordered_map < size_t, std::vector<Server> > & getServers(){
+        std::unordered_map < int, std::vector<Server> > & getServers(){
             return _Servers;
         }
 };

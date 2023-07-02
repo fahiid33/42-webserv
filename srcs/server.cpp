@@ -123,6 +123,20 @@ void Server::setPort(size_t port)
     this->_port = port;
 }
 
+void Server::set_cgi(Cgi cgi)
+{
+    this->_cgi = cgi;
+}
+
+void Server::setDefault(bool Default){
+    this->_default = Default;
+}
+
+bool &Server::getDefault()
+{
+    return this->_default;
+}
+
 void Server::setServerNames(std::vector<std::string> serverNames)
 {
     this->_serverNames = serverNames;

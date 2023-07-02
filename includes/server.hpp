@@ -95,6 +95,7 @@ class Server
         fd_set write_cpy;
         fd_set write_fds;
         size_t _port;
+        bool _default;
         std::string _ip;
 
         std::vector<std::string> _serverNames;
@@ -115,6 +116,8 @@ class Server
         fd_set& getWriteCpy();
         fd_set& getWorkingSet();
         Socket & getServerSocket();
+        void   setDefault(bool Default);
+        bool   & getDefault();
         Cgi & get_cgi();
 
         int getEndServer();

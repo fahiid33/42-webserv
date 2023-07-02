@@ -23,16 +23,7 @@ int main(int ac, char **av)
     {
         Config conf;
         conf.parse_config();
-        for(auto it = conf.getServers().begin(); it != conf.getServers().end(); it++)
-        {
-            std::cout << "port " << it->first << std::endl;
-            for (size_t i = 0; i < it->second.size(); i++)
-            {
-                std::cout << "server " << i << std::endl;
-                it->second[i].print_server();
-            }
-        }
-        // mp.setup_server(conf.getServers());
+        mp.setup_server(conf.getServers());
         // cgi cc;
         // mp.setup_server(conf.getServers());
         

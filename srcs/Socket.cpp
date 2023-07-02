@@ -169,7 +169,7 @@ void    Socket::create_sockets(int port)
         perror("In bind");
         already_bind = 1;
         return;
-        // exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
     if (listen(s_fd, MAXNAMLEN) < 0) 
     {

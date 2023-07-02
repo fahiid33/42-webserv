@@ -138,6 +138,7 @@ void Config::parse_config()
     Server currentServer;
     Location currentLocation;
     std::string defaultS;
+    std::pair<std::string, std::string> twoDefaultServer;
 
     while (getline(this->_Configfile, line))
     {
@@ -154,8 +155,7 @@ void Config::parse_config()
                 if (iss >> defaultS && defaultS != "default_server") {
                     throw std::invalid_argument("Invalid default_server value: " + defaultS);
                 } else if (defaultS == "default_server") {
-                    std::cout << "default server" << std::endl;
-                    // currentServer.setDefaultServer(true);
+                    currentServer.setDefault(true);
                 }
                 std::size_t colonPos = value.find(':');
                 if (colonPos == std::string::npos) {
@@ -229,7 +229,15 @@ void Config::parse_config()
                 }
             }
             else if (directive == "}") {
-                this->_Servers[currentServer.getPort()].push_back(currentServer);
+                if (currentServer.getDefault()) {
+                    if (this->_Servers[currentServer.getPort()][0].getDefault() == true) {
+                        throw std::invalid_argument("two default servers");
+                    }
+                    this->_Servers[currentServer.getPort()].push_back(this->_Servers[currentServer.getPort()][0]);
+                    this->_Servers[currentServer.getPort()][0] = currentServer;
+                } else {
+                    this->_Servers[currentServer.getPort()].push_back(currentServer);
+                }
                 currentServer = Server();
             }
             iss.clear();

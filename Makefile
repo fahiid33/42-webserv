@@ -12,7 +12,7 @@
 
 NAME	= webserv
 CC		= c++
-FLAGS	= 
+FLAGS	= -fsanitize=address -g3
 SRCS 	= main.cpp srcs/MultiPlexing.cpp srcs/request.cpp srcs/response.cpp \
 		srcs/server.cpp srcs/Socket.cpp srcs/parse_conf.cpp srcs/cgi.cpp \
 
