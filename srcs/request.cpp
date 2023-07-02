@@ -1,4 +1,6 @@
 #include "../includes/request.hpp"
+#include "../includes/socket.hpp"
+#include "../includes/server.hpp"
 
 Request::Request()
 {
@@ -120,7 +122,7 @@ void Request::parseFirstLine(std::string &line)
         this->path = path.substr(0, path.find_last_of('/') + 1);
 }
 
-void Request::ParseHeaders(std::istringstream &file)
+void Request::ParseHeaders(std::istringstream &file, std::vector<Server>& servers, std::vector<std::string> chkServerN)
 {
     std::string line;
     std::string key;
@@ -132,8 +134,30 @@ void Request::ParseHeaders(std::istringstream &file)
         value.clear();
         searchThrow(key, line, ": ");
         searchThrow(value, line, "\r");
-        if (key == "Host" && value.empty()) // check against the server name
-            throw std::invalid_argument("400");
+        if (key == "Host") // check against the server name
+        {
+            if (value.empty())
+                throw std::invalid_argument("400");
+            else{
+                std::string port;
+                searchThrow(this->host, value, ":");
+                searchThrow(port, value, "\r");
+                if (this->host == "" && value != "")
+                    throw std::invalid_argument("400");
+                if (port.find_first_not_of("0123456789") != std::string::npos)
+                    throw std::invalid_argument("400");
+                this->host = host;
+                this->port = stoi(port);
+            }
+            if (std::find(chkServerN.begin(), chkServerN.end(), this->host) == chkServerN.end())
+            {
+                for(std::vector<Server>::iterator it = servers.begin(); it != servers.end(); ++it)
+                {
+                    if (std::find(it->getServerNames().begin(), it->getServerNames().end(), this->host) != it->getServerNames().end());
+                        // this->host = it->get()
+                }
+            }
+        }
         else if (key == "Connection")
         {
             if (value == "keep-alive")
@@ -192,6 +216,9 @@ void Request::ParseHeaders(std::istringstream &file)
         }
         this->headers.insert(std::make_pair(key, value));
     }
+    std::map<std::string, std::string>::iterator it = this->headers.find("Host");
+    if (it == this->headers.end())
+        throw std::invalid_argument("400");
     if (method == "POST" && (this->headers.find("Content-Length") == this->headers.end() && this->headers.find("Transfer-Encoding") == this->headers.end()))
             throw std::invalid_argument("411");
     else if (method == "POST" && (this->headers.find("Content-Length") != this->headers.end() && this->headers.find("Transfer-Encoding") != this->headers.end()))
@@ -201,16 +228,19 @@ void Request::ParseHeaders(std::istringstream &file)
         throw std::invalid_argument("400");
 }
 
-Request::Request(std::vector<unsigned char> request)
+Request::Request(std::pair <Socket, Server> & client, std::vector<Server>& servers)
 {
     std::string line;
     std::istringstream file;
     std::vector<unsigned char> pattern;
+    std::vector<unsigned char> request;
+
     pattern.push_back('\r');
     pattern.push_back('\n');
     pattern.push_back('\r');
     pattern.push_back('\n');
 
+    request = client.first.getrequest();
     this->clear();
     auto pos = std::search(request.begin(), request.end(), pattern.begin(), pattern.end());
     std::string str(request.begin(), pos + 2);
@@ -221,7 +251,7 @@ Request::Request(std::vector<unsigned char> request)
     file.str(str);
     std::getline(file, line);
     this->parseFirstLine(line);
-    this->ParseHeaders(file);
+    this->ParseHeaders(file, servers, client.second.getServerNames());
     //// end of header
     //// this is body
     if (pos + 4 != request.end())

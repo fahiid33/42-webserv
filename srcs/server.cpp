@@ -7,7 +7,7 @@ Server::Server()
     FD_ZERO(&working_set);
     FD_ZERO(&write_fds);
     _port = 0;
-    _host = "";
+    _ip = "";
     _serverNames.clear();
     _locations.clear();
     _error_pages.clear();
@@ -108,9 +108,9 @@ size_t &Location::getClientMaxBodySize()
     return this->_clientMaxBodySize;
 }
 
-std::string &Server::getHost()
+std::string &Server::getIp()
 {
-    return this->_host;
+    return this->_ip;
 }
 
 std::vector<std::pair<size_t, std::string> > &Server::getError_pages()
@@ -133,9 +133,9 @@ void Server::setLocations(std::vector<Location> locations)
     this->_locations = locations;
 }
 
-void Server::setHost(std::string host)
+void Server::setIp(std::string ip)
 {
-    this->_host = host;
+    this->_ip = ip;
 }
 
 void Location::setClientMaxBodySize(size_t clientMaxBodySize)

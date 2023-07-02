@@ -95,7 +95,7 @@ class Server
         fd_set write_cpy;
         fd_set write_fds;
         size_t _port;
-        std::string _host;
+        std::string _ip;
 
         std::vector<std::string> _serverNames;
         std::vector<Location> _locations;
@@ -121,7 +121,7 @@ class Server
         size_t & getPort();
         std::vector<std::string> & getServerNames();
         std::vector<Location> & getLocations();
-        std::string & getHost();
+        std::string & getIp();
         std::vector<std::pair<size_t, std::string> > & getError_pages();
         int getServerFd();
         std::string & getRoot();
@@ -136,13 +136,13 @@ class Server
         void    setPort(size_t port);
         void    setServerNames(std::vector<std::string> serverNames);
         void    setLocations(std::vector<Location> locations);
-        void    setHost(std::string host);
+        void    setIp(std::string ip);
         void    setRoot(std::string root);
         void    setIndex(std::vector<std::string> index);
         void    setError_pages(std::vector<std::pair<size_t, std::string> > error_pages);
         void    print_server(){
             std::cout << "port : " << _port << std::endl;
-            std::cout << "host : " << _host << std::endl;
+            std::cout << "ip : " << _ip << std::endl;
             std::cout << "root : " << _root << std::endl;
             std::cout << "index : ";
             for (size_t i = 0; i < _index.size(); i++)

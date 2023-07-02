@@ -163,19 +163,18 @@ bool file_exists (const char *filename) {
 
 void    Response::auto_indexing(const char *dir)
 {
-    std::string resp = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length:";
     std::string str = "<html><head><title>Index of /</title></head><body><h1>Index of /</h1><hr><pre>";
     DIR *dp;
     struct dirent *dirp;
 
+    setHeader("Status", "200 OK");
+    setHeader("Content-Type", "text/html");
     if ((dp = opendir(dir)) == NULL)
     {
         str += "</pre><hr></body></html>";
-        resp += std::to_string(str.length());
-        resp += "\n\n";
-        resp += str;
-        _resp.first = resp;
-        _resp.second = resp.length();
+        setHeader("Content-Length", std::to_string(str.length()));
+        _resp.first = str;
+        _resp.second = str.length();
         return ;
     }
     while ((dirp = readdir(dp)) != NULL)
@@ -187,11 +186,9 @@ void    Response::auto_indexing(const char *dir)
         str += "</a>\n";
     }
     str += "</pre><hr></body></html>";
-    resp += std::to_string(str.length());
-    resp += "\n\n";
-    resp += str;
-    _resp.first = resp;
-    _resp.second = resp.length();
+    setHeader("Content-Length", std::to_string(str.length()));
+    _resp.first = str;
+    _resp.second = str.length();
 }
 
 void Response::HandleGet(Request &req, Location &loc, Server &server)

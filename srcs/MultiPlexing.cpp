@@ -38,28 +38,29 @@ int reader(unsigned char *buffer, Socket &client)
     return true;
 }
 
-void initializeRequest(Socket & client)
+void initializeRequest(std::pair <Socket, Server> & client, std::vector<Server>& servers)
 {
     try
     {
         std::cout << "initializeRequest" << std::endl;
-        Request req(client.getrequest());
-        client.setReq(req);
+        Request req(client, servers);
+        client.first.setReq(req);
     }
     catch(const std::exception& e)
     {
         std::cerr << e.what() << '\n';
         // basic header error handling
         // set the error status to handle the response later on prepare response
-        client.get_Resp().setStatusCode(atoi(e.what()));
-        client.setread_done(1);
+        client.first.get_Resp().setStatusCode(atoi(e.what()));
+        client.first.setread_done(1);
     }
 }
 
-void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
+void MultiPlexing::handleReadData(std::pair <Socket, Server> & client, std::vector<Server>& servers)
 {
     unsigned char buffer[1000];
     int rc = 0;
+
     std::vector<unsigned char> pattern;
     pattern.clear();
     pattern.push_back('0');
@@ -71,7 +72,7 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
     if (!reader(buffer, client.first))
         return ;
     //search for the end of the header
-/*1*/std::vector<unsigned char>::iterator pos = std::search(client.first.getrequest().begin(), client.first.getrequest().end(), pattern.begin()+1, pattern.end());
+    std::vector<unsigned char>::iterator pos = std::search(client.first.getrequest().begin(), client.first.getrequest().end(), pattern.begin()+1, pattern.end());
 
     if (pos != client.first.getrequest().end())
     {
@@ -81,7 +82,7 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
             //----can be optimized 1 & 2 & 3
         else
         // if the header not inizialized yet
-            initializeRequest(client.first);
+            initializeRequest(client, servers);
 
         // perhaps the body is in the first chunk so we check if the body is complete, also if it another chunk we perform the same check
         if (!client.first.getReq().getHeaders().empty() && client.first.getReq().getHeaders().find("Content-Length") != client.first.getReq().getHeaders().end())
@@ -103,14 +104,12 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client)
 
         if (!client.first.getReq().getHeaders().empty() && client.first.getReq().getHeaders().find("Transfer-Encoding") != client.first.getReq().getHeaders().end())
         {
-            std::cout << "again" << std::endl;
             if ((pos = std::search(client.first.getrequest().begin(), client.first.getrequest().end(), pattern.begin(), pattern.end()) ) != client.first.getrequest().end())
             {
                 if (pos + 5 != client.first.getrequest().end())
                 {
                     client.first.get_Resp().setResp(std::make_pair("HTTP/1.1 404 Bad Request\r\n\r\n", 32));
                 }
-                std::cout << "here6" << std::endl;
                 client.first.getReq().parseChunkedBody(client.first.getReq().getBody());
                 client.first.setread_done(1);
             }
@@ -234,7 +233,7 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
         {
             if (FD_ISSET(clients[i].first.getSocket_fd(), &io.read_cpy))
             {
-                handleReadData(clients[i]);
+                handleReadData(clients[i], servers);
                 if (!clients[i].first.getClose_conn() && clients[i].first.getread_done())
                 {
                     clients[i].first.getrequest().clear();
@@ -250,12 +249,9 @@ void MultiPlexing::setup_server(std::vector<Server>& servers)
                 {
                     clients[i].first.setWrite_done(0);
                     FD_CLR(clients[i].first.getSocket_fd(), &io.writefds);
-                    // FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
-                    // close(clients[i].first.getSocket_fd());
                     if (clients[i].first.get_Resp().getFile() != "")
                         close(clients[i].first.get_Resp().getFd());
                     clients[i].first.clear();
-                    // clients.erase(clients.begin() + i);
                 }
             }
             if (clients[i].first.getClose_conn())

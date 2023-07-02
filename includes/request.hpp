@@ -23,12 +23,16 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 
+class Server;
+class Socket;
+
 class Request {
     
     private:
         time_t      started;
         std::string request;
         std::string method;
+        size_t      port;
         std::string path;
         std::string file;
         std::string boundary;
@@ -46,7 +50,7 @@ class Request {
     public:
         Request();
         Request(const Request &request);
-        Request(std::vector<unsigned char> request);
+        Request(std::pair <Socket, Server> & client, std::vector<Server>& servers);
         ~Request();
         Request &operator=(const Request &request);
         time_t getStarted();
@@ -72,5 +76,5 @@ class Request {
         void parseChunkedBody(std::vector<unsigned char> const & request);
 
         void parseFirstLine(std::string &line);
-        void ParseHeaders(std::istringstream &file);
+        void ParseHeaders(std::istringstream &file, std::vector<Server>& servers, std::vector<std::string> serverNames);
 };

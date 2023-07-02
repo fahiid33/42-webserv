@@ -137,6 +137,7 @@ void Config::parse_config()
     size_t tmp;
     Server currentServer;
     Location currentLocation;
+    std::string defaultS;
 
     while (getline(this->_Configfile, line))
     {
@@ -148,12 +149,32 @@ void Config::parse_config()
             iss.str(line);
             if(!(iss >> directive))
                 break;
-            if (directive == "listen" && iss >> tmp) {
-                currentServer.setPort(tmp);
+            if (directive == "listen" && iss >> value) {
+                std::string defaultS;
+                if (iss >> defaultS && defaultS != "default_server") {
+                    throw std::invalid_argument("Invalid default_server value: " + defaultS);
+                } else if (defaultS == "default_server") {
+                    std::cout << "default server" << std::endl;
+                    // currentServer.setDefaultServer(true);
+                }
+                std::size_t colonPos = value.find(':');
+                if (colonPos == std::string::npos) {
+                    std::string port = value;
+                    if (port.find_first_not_of("0123456789") != std::string::npos) {
+                        throw std::invalid_argument("Invalid port value: " + port);
+                    }
+                    currentServer.setPort(std::stoi(port));
+                } else {
+                    std::string ip = value.substr(0, colonPos);
+                    std::string port = value.substr(colonPos + 1);
+                    if (port.find_first_not_of("0123456789") != std::string::npos) {
+                        throw std::invalid_argument("Invalid port value: " + port);
+                    }
+                    currentServer.setPort(std::stoi(port));
+                    currentServer.setIp(ip);
+                }
             } else if (directive == "root" && iss >> value) {
                 currentServer.setRoot(value);
-            } else if (directive == "host" && iss >> value) {
-                currentServer.setHost(value);
             } else if (directive == "server_name") {
                 while(iss >> value)
                     currentServer.getServerNames().push_back(value);
@@ -208,7 +229,7 @@ void Config::parse_config()
                 }
             }
             else if (directive == "}") {
-                this->_Servers.push_back(currentServer);
+                this->_Servers[currentServer.getPort()].push_back(currentServer);
                 currentServer = Server();
             }
             iss.clear();

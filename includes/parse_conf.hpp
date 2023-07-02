@@ -17,6 +17,7 @@
 #include <sstream>
 #include <dirent.h>
 #include <map>
+#include <unordered_map>
 #include <vector>
 #include <algorithm>
 #include <sys/socket.h>
@@ -29,7 +30,7 @@ class Server;
 class Config
 {
     private:
-        std::vector<Server> _Servers;
+        std::unordered_map < size_t, std::vector<Server> > _Servers;
         std::string _FilePath;
         std::ifstream _Configfile;
     public:
@@ -37,7 +38,7 @@ class Config
         Config(std::string FilePath);
         ~Config();
         void parse_config();
-        std::vector<Server> & getServers(){
+        std::unordered_map < size_t, std::vector<Server> > & getServers(){
             return _Servers;
         }
 };
