@@ -38,26 +38,15 @@ int reader(unsigned char *buffer, Socket &client)
     return true;
 }
 
-void initializeRequest(std::pair <Socket, Server> & client, std::unordered_map<int, std::vector<Server> > & servers)
+void initializeRequest(std::pair <Socket, Server> & client, std::vector<Server> & servers)
 {
-    // here now i have the map of ports and matched vector of servers
-    // next to get the vector of servers that match the port of the client
-
-    std::vector<Server> matched_servers = servers.find(client.second.getPort())->second;
-    // print the matched servers
-
-    for (size_t i = 0; i < matched_servers.size(); i++)
-    {
-        std::cout << "server " << i << std::endl;
-        matched_servers[i].print_server();
-    }
     // sleep(1000);
 
     try
     {
         std::cout << "initializeRequest" << std::endl;
-        // Request req(client, server);
-        // client.first.setReq(req);
+        Request req(client, servers);
+        client.first.setReq(req);
     }
     catch(const std::exception& e)
     {
@@ -69,7 +58,7 @@ void initializeRequest(std::pair <Socket, Server> & client, std::unordered_map<i
     }
 }
 
-void MultiPlexing::handleReadData(std::pair <Socket, Server> & client, std::unordered_map<int, std::vector<Server> > & servers)
+void MultiPlexing::handleReadData(std::pair <Socket, Server> & client, std::vector<Server> & servers)
 {
     unsigned char buffer[1000];
     int rc = 0;
@@ -248,7 +237,7 @@ void MultiPlexing::setup_server(std::unordered_map<int, std::vector<Server> > & 
         {
             if (FD_ISSET(clients[i].first.getSocket_fd(), &io.read_cpy))
             {
-                handleReadData(clients[i], servers);
+                handleReadData(clients[i], servers[clients[i].second.getPort()]);
                 if (!clients[i].first.getClose_conn() && clients[i].first.getread_done())
                 {
                     clients[i].first.getrequest().clear();

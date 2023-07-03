@@ -122,7 +122,7 @@ void Request::parseFirstLine(std::string &line)
         this->path = path.substr(0, path.find_last_of('/') + 1);
 }
 
-void Request::ParseHeaders(std::istringstream &file, std::vector<Server>& servers, std::vector<std::string> chkServerN)
+void Request::ParseHeaders(std::istringstream &file)
 {
     std::string line;
     std::string key;
@@ -134,29 +134,9 @@ void Request::ParseHeaders(std::istringstream &file, std::vector<Server>& server
         value.clear();
         searchThrow(key, line, ": ");
         searchThrow(value, line, "\r");
-        if (key == "Host") // check against the server name
-        {
-            if (value.empty())
-                throw std::invalid_argument("400");
-            else{
-                std::string port;
-                searchThrow(this->host, value, ":");
-                searchThrow(port, value, "\r");
-                if (this->host == "" && value != "")
-                    throw std::invalid_argument("400");
-                if (port.find_first_not_of("0123456789") != std::string::npos)
-                    throw std::invalid_argument("400");
-                this->host = host;
-                this->port = stoi(port);
-            }
-            if (std::find(chkServerN.begin(), chkServerN.end(), this->host) == chkServerN.end())
-            {
-                for(std::vector<Server>::iterator it = servers.begin(); it != servers.end(); ++it)
-                {
-                    if (std::find(it->getServerNames().begin(), it->getServerNames().end(), this->host) != it->getServerNames().end());
-                        // this->host = it->get()
-                }
-            }
+        if (key == "Host"){
+            host = value.substr(0, value.find(':'));
+            std::cout << "host: " << host << std::endl;
         }
         else if (key == "Connection")
         {
@@ -251,9 +231,19 @@ Request::Request(std::pair <Socket, Server> & client, std::vector<Server>& serve
     file.str(str);
     std::getline(file, line);
     this->parseFirstLine(line);
-    this->ParseHeaders(file, servers, client.second.getServerNames());
-    //// end of header
-    //// this is body
+    this->ParseHeaders(file);
+    // match the server name with the host header
+    std::vector<Server>::iterator it = servers.begin();
+    while (it != servers.end())
+    {
+        if (std::find(it->getServerNames().begin(), it->getServerNames().end(), host) != it->getServerNames().end())
+            break;
+        it++;
+    }
+    if (it != servers.end())
+        client.second = *it;
+    else
+        client.second = servers[0];
     if (pos + 4 != request.end())
     {    std::vector<unsigned char> body(pos + 4, request.end());
         this->body = body;}

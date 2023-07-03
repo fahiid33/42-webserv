@@ -138,7 +138,6 @@ void Config::parse_config()
     Server currentServer;
     Location currentLocation;
     std::string defaultS;
-    std::pair<std::string, std::string> twoDefaultServer;
 
     while (getline(this->_Configfile, line))
     {
@@ -152,26 +151,24 @@ void Config::parse_config()
                 break;
             if (directive == "listen" && iss >> value) {
                 std::string defaultS;
-                if (iss >> defaultS && defaultS != "default_server") {
+                if (iss >> defaultS && defaultS != "default_server")
                     throw std::invalid_argument("Invalid default_server value: " + defaultS);
-                } else if (defaultS == "default_server") {
+                else if (defaultS == "default_server")
                     currentServer.setDefault(true);
-                }
                 std::size_t colonPos = value.find(':');
                 if (colonPos == std::string::npos) {
                     std::string port = value;
-                    if (port.find_first_not_of("0123456789") != std::string::npos) {
+                    if (port.find_first_not_of("0123456789") != std::string::npos)
                         throw std::invalid_argument("Invalid port value: " + port);
-                    }
                     currentServer.setPort(std::stoi(port));
                 } else {
                     std::string ip = value.substr(0, colonPos);
+                    if (!ip.empty())
+                        throw std::invalid_argument("don't support ip: " + ip);
                     std::string port = value.substr(colonPos + 1);
-                    if (port.find_first_not_of("0123456789") != std::string::npos) {
+                    if (port.find_first_not_of("0123456789") != std::string::npos)
                         throw std::invalid_argument("Invalid port value: " + port);
-                    }
                     currentServer.setPort(std::stoi(port));
-                    currentServer.setIp(ip);
                 }
             } else if (directive == "root" && iss >> value) {
                 currentServer.setRoot(value);
@@ -230,7 +227,7 @@ void Config::parse_config()
             }
             else if (directive == "}") {
                 if (currentServer.getDefault()) {
-                    if (this->_Servers[currentServer.getPort()][0].getDefault() == true) {
+                    if (!this->_Servers.empty() && this->_Servers[currentServer.getPort()][0].getDefault() == true) {
                         throw std::invalid_argument("two default servers");
                     }
                     this->_Servers[currentServer.getPort()].push_back(this->_Servers[currentServer.getPort()][0]);

@@ -76,5 +76,5 @@ class Request {
         void parseChunkedBody(std::vector<unsigned char> const & request);
 
         void parseFirstLine(std::string &line);
-        void ParseHeaders(std::istringstream &file, std::vector<Server>& servers, std::vector<std::string> serverNames);
+        void ParseHeaders(std::istringstream &file);
 };

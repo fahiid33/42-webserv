@@ -61,6 +61,6 @@ class MultiPlexing
         void addClient(int sock, struct sockaddr_in address,Server & server);
         void    CreateServerSockets(Server& servers);  
         void setClients(Clients & client);
-        void handleReadData(std::pair <Socket, Server> &client, std::unordered_map<int, std::vector<Server> > & servers);
+        void handleReadData(std::pair <Socket, Server> &client, std::vector<Server> & servers);
         void handleWriteData(Socket &sock);
 };

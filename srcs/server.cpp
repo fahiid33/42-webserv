@@ -13,6 +13,7 @@ Server::Server()
     _error_pages.clear();
     _index.clear();
     _root = "";
+    _default = false;
     end_server = 0;
     max_sd = 0;
     _cgi.clear();
