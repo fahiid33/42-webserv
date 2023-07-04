@@ -200,8 +200,7 @@ void MultiPlexing::setup_server(std::unordered_map<int, std::vector<Server> > & 
         memcpy(&io.read_cpy, &io.readfds, sizeof(io.readfds));
         memcpy(&io.write_cpy, &io.writefds, sizeof(io.writefds));
 
-        if ((rc = select(max_sd + 1, &io.read_cpy, &io.write_cpy, NULL, &timeout)) < 0)
-        {
+        if ((rc = select(max_sd + 1, &io.read_cpy, &io.write_cpy, NULL, &timeout)) < 0) {
             perror("select() failed");
             exit(EXIT_FAILURE);
         }
@@ -211,8 +210,7 @@ void MultiPlexing::setup_server(std::unordered_map<int, std::vector<Server> > & 
             {
                 std::cout << clients[i].first.getReq().getConn() << " " << clients[i].first.getReq().getTimeOut() << " " << time(NULL) - clients[i].first.getReq().getStarted() << std::endl;
                 if ((clients[i].first.getClose_conn() || !clients[i].first.getReq().getConn() || (clients[i].first.getReq().getConn() &&
-                (time(NULL) - clients[i].first.getReq().getStarted() >= clients[i].first.getReq().getTimeOut()))))
-                {
+                (time(NULL) - clients[i].first.getReq().getStarted() >= clients[i].first.getReq().getTimeOut())))) {
                     std::cout << "clian sala mn read" << std::endl;
                     // remove the socket fd from the sets : handle error "bad file descriptor"
                     FD_CLR(clients[i].first.getSocket_fd(), &io.writefds);
@@ -235,22 +233,18 @@ void MultiPlexing::setup_server(std::unordered_map<int, std::vector<Server> > & 
         // Handle client I/O
         for (int i = 0; i < clients.size(); i++)
         {
-            if (FD_ISSET(clients[i].first.getSocket_fd(), &io.read_cpy))
-            {
+            if (FD_ISSET(clients[i].first.getSocket_fd(), &io.read_cpy)) {
                 handleReadData(clients[i], servers[clients[i].second.getPort()]);
-                if (!clients[i].first.getClose_conn() && clients[i].first.getread_done())
-                {
+                if (!clients[i].first.getClose_conn() && clients[i].first.getread_done()) {
                     clients[i].first.getrequest().clear();
                     FD_SET(clients[i].first.getSocket_fd(), &io.writefds);
                 }
             }
 
-            if (FD_ISSET(clients[i].first.getSocket_fd(), &io.write_cpy))
-            {
+            if (FD_ISSET(clients[i].first.getSocket_fd(), &io.write_cpy)) {
                 clients[i].first.get_Resp().prepare_response(clients[i].first.getReq(), clients[i].second);
                 handleWriteData(clients[i].first);
-                if (clients[i].first.getWrite_done())
-                {
+                if (clients[i].first.getWrite_done()) {
                     clients[i].first.setWrite_done(0);
                     FD_CLR(clients[i].first.getSocket_fd(), &io.writefds);
                     if (clients[i].first.get_Resp().getFile() != "")
@@ -258,8 +252,7 @@ void MultiPlexing::setup_server(std::unordered_map<int, std::vector<Server> > & 
                     clients[i].first.clear();
                 }
             }
-            if (clients[i].first.getClose_conn())
-            {
+            if (clients[i].first.getClose_conn()) {
                 FD_CLR(clients[i].first.getSocket_fd(), &io.readfds);
                 FD_CLR(clients[i].first.getSocket_fd(), &io.writefds);
                 close(clients[i].first.getSocket_fd());
@@ -281,14 +274,12 @@ void    MultiPlexing::handleNewConnection(Server & server, Clients & clients)
 
     if ((new_socket = accept(server.getServerFd(), (struct sockaddr *)& address, (socklen_t*)&addrlen))<0)
     {
-        if (errno != EWOULDBLOCK)
-        {
+        if (errno != EWOULDBLOCK) {
             perror("  accept() failed");
             server.setEndServer(1);
         }
     }
-    if ((fcntl(new_socket, F_SETFL, O_NONBLOCK)) <  0)
-    {
+    if ((fcntl(new_socket, F_SETFL, O_NONBLOCK)) <  0) {
         perror("In fcntl");
         exit(EXIT_FAILURE);
     }

@@ -10,35 +10,10 @@ Cgi::~Cgi()
 
 void Cgi::initEnv(Request const & req, std::string const & server_name, std::string const & root)
 {
-
-//     FCGI_ROLE: RESPONDER
-//      SCRIPT_FILENAME: /usr/lib/cgi-bin/cgi_python.py
-//    GATEWAY_INTERFACE: CGI/1.1
-//      SERVER_SOFTWARE: nginx
-//         QUERY_STRING: 
-//       REQUEST_METHOD: POST
-//         CONTENT_TYPE: multipart/form-data
-//       CONTENT_LENGTH: 18
-//          SCRIPT_NAME: /cgi-bin/cgi_python.py
-//          REQUEST_URI: /cgi-bin/cgi_python.py
-//         DOCUMENT_URI: /cgi-bin/cgi_python.py
-//        DOCUMENT_ROOT: /usr/lib
-//      SERVER_PROTOCOL: HTTP/1.1
-//          REMOTE_ADDR: 127.0.0.1
-//          REMOTE_PORT: 44688
-//          SERVER_ADDR: 127.0.0.1
-//          SERVER_PORT: 999
-//          SERVER_NAME: localhost
-//            HTTP_HOST: localhost:999
-//      HTTP_USER_AGENT: curl/7.88.1
-//          HTTP_ACCEPT: */*
-    if (req.getHeaders().find("Content-Length") != req.getHeaders().end())
-    {
+    if (req.getHeaders().find("Content-Length") != req.getHeaders().end()) {
         std::cout <<  "oh no" << std::endl;
         this->env["CONTENT_LENGTH"] = req.getHeaders().find("Content-Length")->second;
-    }
-    else
-    {
+    } else {
         std::cout <<  req.getBody().size() << std::endl;
         this->env["CONTENT_LENGTH"] = std::to_string(req.getBody().size());
     }
@@ -50,6 +25,7 @@ void Cgi::initEnv(Request const & req, std::string const & server_name, std::str
     this->env["REQUEST_METHOD"] = req.getMethod(); // GET, POST, HEAD
     this->env["SERVER_NAME"] = server_name; // kayna fl config, normally server object
     this->env["SCRIPT_NAME"] = req.getPath() + req.getFile(); // The name of the CGI script.
+    this->env["PATH_INFO"] = req.getPath() + req.getFile(); // The name of the CGI script.
     this->env["REQUEST_URI"] = req.getPath() + req.getFile(); // The name of the CGI script.
     this->env["DOCUMENT_URI"] = req.getPath() + req.getFile(); // The name of the CGI script.
     this->env["DOCUMENT_ROOT"] = root; // The name of the CGI script.
@@ -87,11 +63,6 @@ void Cgi::set_Cgi(std::pair<std::string, std::string> const &cgi)
 {
     this->_cgi = cgi;
 }
-
-// void Cgi::cgi_exec(Request &req, Response &resp, Server &server)
-// {
-
-// }
 
 void Cgi::clear()
 {

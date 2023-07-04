@@ -152,27 +152,20 @@ void    Socket::create_sockets(int port)
     address = this->init_Sockadd(port);
     int     on;
 
-    if ((s_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
-    {
+    if ((s_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("In socket");
         exit(EXIT_FAILURE);
     }
-    if (setsockopt(s_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) < 0)
-    {
+    if (setsockopt(s_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) < 0) {
         perror("In setsockopt");
         exit(EXIT_FAILURE);
     }
     memset(address.sin_zero, '\0', sizeof address.sin_zero);
-    if (bind(s_fd, (struct sockaddr *)&address, sizeof(address))<0) 
-    {
-
+    if (bind(s_fd, (struct sockaddr *)&address, sizeof(address))<0) {
         perror("In bind");
         already_bind = 1;
-        return;
         exit(EXIT_FAILURE);
-    }
-    if (listen(s_fd, MAXNAMLEN) < 0) 
-    {
+    } if (listen(s_fd, MAXNAMLEN) < 0) {
         perror("In listen");
         exit(EXIT_FAILURE);
     }

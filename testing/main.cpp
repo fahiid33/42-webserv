@@ -5,7 +5,7 @@ using namespace std;
 
 int main(int argc, char * argv[])
 {
-    string host(argv[1]);
+    string file(argv[1]);
 
-    cout << host.substr(0, host.find(':')) << endl;
+    cout << file.substr(file.find_last_of('/') + 1, file.find_first_of('?') - file.find_last_of('/') - 1) << endl;
 }
