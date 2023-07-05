@@ -78,7 +78,7 @@ bool &Location::getAutoIndex()
     return this->_autoIndex;
 }
 
-std::string &Location::getUploadPath()
+bool &Location::getUploadPath()
 {
     return this->_uploadPath;
 }
@@ -118,7 +118,7 @@ void Location::setAutoIndex(bool autoIndex)
     this->_autoIndex = autoIndex;
 }
 
-void Location::setUploadPath(std::string uploadPath)
+void Location::setUploadPath(bool uploadPath)
 {
     this->_uploadPath = uploadPath;
 }
@@ -208,8 +208,13 @@ void Config::parse_config()
                         } else if (directive == "index") {
                             while(iss >> value)
                                 currentLocation.getIndex().push_back(value);
-                        } else if(directive == "upload_path" && iss >> value) {
-                            currentLocation.setUploadPath(value);
+                        } else if(directive == "upload" && iss >> value) {
+                            if (value == "on")
+                                currentLocation.setUploadPath(1);
+                            else if (value == "off")
+                                currentLocation.setUploadPath(0);
+                            else
+                                throw std::invalid_argument("Invaalid upload value: " + value);
                         } else if(directive == "return" && iss >> value >> value1) {
                             currentLocation.setRedirection(std::make_pair (value,value1));
                         } else if(directive == "autoindex" && iss >> value) {

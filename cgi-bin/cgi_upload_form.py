@@ -9,7 +9,6 @@ import sys
 import io
 
 
-open('/home/bufallo/webserv/Upload/papa', 'wb')
 cgitb.enable()
 
 try:
@@ -27,13 +26,16 @@ form = cgi.FieldStorage()
 
 # A nested FieldStorage instance holds the file
 fileitem = form['file']
+upload_path = form['upload_path']
+print (upload_path.value)
 
 # Test if the file was uploaded
 if fileitem.filename:
     # Strip leading path from file name
     # to avoid directory traversal attacks
     fn = os.path.basename(fileitem.filename)
-    with open('/home/bufallo/webserv/Upload/' + fn, 'wb') as f:
+    with open(upload_path.value + fn, 'wb') as f:
+        print(upload_path.value + fileitem.filename)
         f.write(fileitem.file.read())
     message = f'The file "{fn}" was uploaded successfully'
 else:

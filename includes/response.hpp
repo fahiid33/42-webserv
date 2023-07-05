@@ -75,4 +75,5 @@ class Response
         void    HandlePost(Request & req, Location & loc, Server & server);
         void    HandleDelete(Request & req, Location & loc, Server & server);
         void    prepare_response(Request & req, Server & server);
+        const Location   & match_loc( Server & server, std::string const & path);
 };

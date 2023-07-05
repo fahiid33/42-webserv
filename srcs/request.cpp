@@ -2,6 +2,8 @@
 #include "../includes/socket.hpp"
 #include "../includes/server.hpp"
 
+const char* YELLOW1 = "\033[33m";
+
 Request::Request()
 {
     this->request = "";
@@ -165,6 +167,14 @@ void Request::ParseHeaders(std::istringstream &file)
                     throw std::invalid_argument("400");
                 value = valos;
             }
+        }
+        else if (key == "Referer"){
+
+            value = value.substr(value.find_first_of("//") + 2, value.length() - 1);
+            value = value.substr(value.find_first_of("/"), value.length() - 1);
+            if (value.find_last_of('/') != std::string::npos)
+                value = value.substr(0, value.find_last_of('/') + 1);
+            std::cout << YELLOW1 << "referer: " << value  << std::endl;
         }
         else if (key == "Keep-Alive") {
             std::string chck;

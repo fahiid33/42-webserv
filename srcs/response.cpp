@@ -239,8 +239,144 @@ void Response::HandleGet(Request &req, Location &loc, Server &server)
         }
     }
     // check cgi
-    if (server.get_cgi().OK()) {
-        // execute cgi
+    // if (server.get_cgi().OK()) {
+    //     // execute cgi
+    //     server.get_cgi().initEnv(req, "localhost", loc.getRoot());
+    //     pipe(fdin);
+    //     pipe(fdout);
+    //     child_pid = fork();
+    //     if (child_pid < 0)
+    //         exit(1);
+    //     if (child_pid == 0) {
+    //         dup2(fdout[1], STDOUT_FILENO);
+    //         dup2(fdin[0], STDIN_FILENO);
+    //         close(fdout[0]);
+    //         close(fdin[1]);
+    //         char *av[3];
+    //         av[0] = strdup(server.get_cgi().get_Cgi().first.c_str());
+    //         av[1] = strdup(request_resource.c_str());
+    //         av[2] = NULL;
+    //         execve(av[0], av, server.get_cgi().getEnv());
+    //         exit(0);
+    //     }
+    //     close(fdout[1]);
+    //     close(fdin[0]);
+    //     rc = write(fdin[1], req.getBody().data(), req.getBody().size());
+    //     if (rc != req.getBody().size()) {
+    //         perror("error write: ");
+    //         exit(1);
+    //     }
+    //     close(fdin[1]);
+    //     while ((bytesRead = read(fdout[0], buffer, BUFFER_SIZE)) > 0)
+    //         output.write(buffer, bytesRead);
+    //     close (fdout[0]);
+    //     wait (NULL);
+    //     dup2(fdtmp, 0);
+    //     setHeader("Status", "200 OK");
+    //     setHeader("Content-Type", "text/html; charset=UTF-8");
+    //     setHeader("Connection", "close");
+    //     setHeader("Content-Length", std::to_string(output.str().length()));
+    //     _resp.first += output.str();
+    //     _resp.second = _resp.first.length();
+
+    //     return;
+    // }
+    setHeader("Status", "200 OK");
+    setHeader("Content-Type", contentType);
+    file.open(request_resource, std::ios::binary | std::ios::ate);
+    setHeader("Content-Length", std::to_string(file.tellg()));
+    setHeader("Connection", "Keep-Alive");
+    this->file = request_resource;
+}
+
+void Response::generateErrorPage(int code)
+{
+    auto it = errorMessages.find(code);
+    if (it != errorMessages.end()) {
+        std::string errorMessage = it->second;
+        std::string errorPage = "<!DOCTYPE html>\n";
+        errorPage += "<html>\n";
+        errorPage += "<head>\n";
+        errorPage += "<title>Error " + std::to_string(code) + ": " + errorMessage + "</title>\n";
+        errorPage += "<style>\n";
+        errorPage += "body {font-family: Arial, sans-serif; margin: 0; padding: 20px;}\n";
+        errorPage += "h1 {font-size: 24px;}\n";
+        errorPage += "p {font-size: 16px;}\n";
+        errorPage += "</style>\n";
+        errorPage += "</head>\n";
+        errorPage += "<body>\n";
+        errorPage += "<h1>Error " + std::to_string(code) + ": " + errorMessage + "</h1>\n";
+        errorPage += "<p>" + errorMessage + "</p>\n";
+        errorPage += "</body>\n";
+        errorPage += "</html>";
+
+        this->setHeader("Status", std::to_string(code) + " " + errorMessage);
+        this->setHeader("Content-Type", "text/html");
+        this->setHeader("Content-Length", std::to_string(errorPage.length()));
+        _resp.first = errorPage;
+        _resp.second = errorPage.length();
+    }
+    else {
+        this->setHeader ("Status", "500 Internal Server Error");
+        this->setHeader ("Content-Type", "text/html");
+        _resp.first = "<!DOCTYPE html>\n";
+        _resp.first += "<html>\n";
+        _resp.first = "500 internal server error";
+        _resp.first += "</html>\n";
+        this->setHeader("Content-Length", std::to_string(_resp.first.length()));
+        _resp.second = _resp.first.length();
+    }
+}
+
+const Location   & Response::match_loc(Server & server, std::string const & path)
+{
+    std::vector<Location>::iterator it = server.getLocations().begin();
+    std::vector<Location>::iterator ite = server.getLocations().end();
+
+    while (it != server.getLocations().end())
+    {
+        if (path.find(it->getLocationPath()) != std::string::npos) {
+            if (it->getLocationPath() == "/") {
+                ite = it;
+                it++;
+                continue ;
+            } else
+                break ;
+        }
+        it++;
+    }
+    if (it == server.getLocations().end() && ite == server.getLocations().end()) {
+        this->generateErrorPage(404);
+        return Location(-1);
+    } else if (it == server.getLocations().end() && ite != server.getLocations().end())
+        it = ite;
+    return *it;
+}
+
+void Response::HandlePost(Request &req, Location &loc, Server &server)
+{
+    std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
+    int fdtmp = dup(0);
+    int fdin[2];
+    int fdout[2];
+    pid_t child_pid;
+    int rc;
+    const int BUFFER_SIZE = 4096;
+    char buffer[BUFFER_SIZE];
+    std::stringstream output;
+    ssize_t bytesRead;
+    Location tmp = match_loc(server, req.getHeaders().find("Referer")->second);
+
+    if (loc.getClientMaxBodySize() < req.getBody().size()) {
+        generateErrorPage(413);
+        return ;
+    }
+    std::cout << "HMMM" << std::endl;
+    if (tmp.get_a() == -1)
+        return ;
+    if (tmp.getUploadPath())
+    {
+        std::cout << "HMMM1111" << std::endl;
         server.get_cgi().initEnv(req, "localhost", loc.getRoot());
         pipe(fdin);
         pipe(fdout);
@@ -278,72 +414,9 @@ void Response::HandleGet(Request &req, Location &loc, Server &server)
         setHeader("Content-Length", std::to_string(output.str().length()));
         _resp.first += output.str();
         _resp.second = _resp.first.length();
-
-        return;
     }
-    setHeader("Status", "200 OK");
-    setHeader("Content-Type", contentType);
-    file.open(request_resource, std::ios::binary | std::ios::ate);
-    setHeader("Content-Length", std::to_string(file.tellg()));
-    setHeader("Connection", "Keep-Alive");
-    this->file = request_resource;
-}
-
-void Response::HandlePost(Request &req, Location &loc, Server &server)
-{
-    std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
-    int fdtmp = dup(0);
-    int fdin[2];
-    int fdout[2];
-    pid_t child_pid;
-    int rc;
-    const int BUFFER_SIZE = 4096;
-    char buffer[BUFFER_SIZE];
-    std::stringstream output;
-    ssize_t bytesRead;
-
-    if (loc.getClientMaxBodySize() < req.getBody().size()) {
-        generateErrorPage(413);
-        return ;
-    }
-    server.get_cgi().initEnv(req, "localhost", loc.getRoot());
-    pipe(fdin);
-    pipe(fdout);
-    child_pid = fork();
-    if (child_pid < 0)
-        exit(1);
-    if (child_pid == 0) {
-        dup2(fdout[1], STDOUT_FILENO);
-        dup2(fdin[0], STDIN_FILENO);
-        close(fdout[0]);
-        close(fdin[1]);
-        char *av[3];
-        av[0] = strdup(server.get_cgi().get_Cgi().first.c_str());
-        av[1] = strdup(request_resource.c_str());
-        av[2] = NULL;
-        execve(av[0], av, server.get_cgi().getEnv());
-        exit(0);
-    }
-    close(fdout[1]);
-    close(fdin[0]);
-    rc = write(fdin[1], req.getBody().data(), req.getBody().size());
-    if (rc != req.getBody().size()) {
-        perror("error write: ");
-        exit(1);
-    }
-    close(fdin[1]);
-    while ((bytesRead = read(fdout[0], buffer, BUFFER_SIZE)) > 0)
-        output.write(buffer, bytesRead);
-    close (fdout[0]);
-    wait (NULL);
-    dup2(fdtmp, 0);
-    setHeader("Status", "200 OK");
-    setHeader("Content-Type", "text/html; charset=UTF-8");
-    setHeader("Connection", "close");
-    setHeader("Content-Length", std::to_string(output.str().length()));
-    _resp.first += output.str();
-    _resp.second = _resp.first.length();
-
+    else
+        generateErrorPage(503);
     // std::vector<std::string>::iterator it;
     // if (isDirectory(request_resource.c_str()))
     // {
@@ -437,45 +510,6 @@ std::string Response::toString() const {
     return oss.str();
 }
 
-void Response::generateErrorPage(int code)
-{
-    auto it = errorMessages.find(code);
-    if (it != errorMessages.end()) {
-        std::string errorMessage = it->second;
-        std::string errorPage = "<!DOCTYPE html>\n";
-        errorPage += "<html>\n";
-        errorPage += "<head>\n";
-        errorPage += "<title>Error " + std::to_string(code) + ": " + errorMessage + "</title>\n";
-        errorPage += "<style>\n";
-        errorPage += "body {font-family: Arial, sans-serif; margin: 0; padding: 20px;}\n";
-        errorPage += "h1 {font-size: 24px;}\n";
-        errorPage += "p {font-size: 16px;}\n";
-        errorPage += "</style>\n";
-        errorPage += "</head>\n";
-        errorPage += "<body>\n";
-        errorPage += "<h1>Error " + std::to_string(code) + ": " + errorMessage + "</h1>\n";
-        errorPage += "<p>" + errorMessage + "</p>\n";
-        errorPage += "</body>\n";
-        errorPage += "</html>";
-
-        this->setHeader("Status", std::to_string(code) + " " + errorMessage);
-        this->setHeader("Content-Type", "text/html");
-        this->setHeader("Content-Length", std::to_string(errorPage.length()));
-        _resp.first = errorPage;
-        _resp.second = errorPage.length();
-    }
-    else {
-        this->setHeader ("Status", "500 Internal Server Error");
-        this->setHeader ("Content-Type", "text/html");
-        _resp.first = "<!DOCTYPE html>\n";
-        _resp.first += "<html>\n";
-        _resp.first = "500 internal server error";
-        _resp.first += "</html>\n";
-        this->setHeader("Content-Length", std::to_string(_resp.first.length()));
-        _resp.second = _resp.first.length();
-    }
-}
-
 void Response::initErrorMessages()
 {
     errorMessages[400] = "Bad Request";
@@ -494,51 +528,35 @@ void Response::initErrorMessages()
     errorMessages[413] = "Payload Too Large";
     errorMessages[409] = "Conflict";
     errorMessages[408] = "Request Timeout";
+    errorMessages[512] = "Bad Gateway";
+    errorMessages[503] = "Service Unavailable";
 }
 
 void  Response::prepare_response(Request & req, Server & server)
 {
-    std::vector<Location>::iterator it = server.getLocations().begin();
-    std::vector<Location>::iterator ite = server.getLocations().end();
-
+    Location it = this->match_loc(server, req.getPath());
     if (_status_code != 0) {
         std::cout << "generate error page " << _status_code << std::endl;
         generateErrorPage(_status_code);
         return ;
     }
-
-    while (it != server.getLocations().end())
-    {
-        if (req.getPath().find(it->getLocationPath()) != std::string::npos) {
-            if (it->getLocationPath() == "/") {
-                ite = it;
-                it++;
-                continue ;
-            } else
-                break ;
-        }
-        it++;
-    }
-    if (it == server.getLocations().end() && ite == server.getLocations().end()) {
-        generateErrorPage(404);
+    if (it.get_a() == -1)
         return ;
-    } else if (it == server.getLocations().end() && ite != server.getLocations().end())
-        it = ite;
-    if (it->getRedirection().first != "") {
+    if (it.getRedirection().first != "") {
         generateErrorPage(301);
-        setHeader("Location", it->getRedirection().first);
+        setHeader("Location", it.getRedirection().first);
         return ;
     }
-    if (std::find(it->getAllowedMethods().begin(), it->getAllowedMethods().end(), req.getMethod()) == it->getAllowedMethods().end()) {
+    if (std::find(it.getAllowedMethods().begin(), it.getAllowedMethods().end(), req.getMethod()) == it.getAllowedMethods().end()) {
         generateErrorPage(405);
         return ;
     }
     if (req.getMethod() == "GET") {
-        HandleGet(req, *it, server);
+        HandleGet(req, it, server);
     } else if (req.getMethod() == "POST") {
-        HandlePost(req, *it, server);
+        HandlePost(req, it, server);
     } else if (req.getMethod() == "DELETE") {
-        HandleDelete(req, *it, server);
+        HandleDelete(req, it, server);
     }
 }
 

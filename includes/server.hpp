@@ -37,21 +37,23 @@ class Location
         std::vector<std::string>                            _index;
         bool                                                _autoIndex;
         size_t                                              _clientMaxBodySize;
-        std::string                                         _uploadPath;
+        bool                                                _uploadPath;
         std::pair<std::string, std::string>                 _redirection;
+        int     a;
 
     public:
         Location();
+        Location(int a) : a(a) {};
         ~Location();
 
         std::string                                         & getLocationNumber();
         std::string                                         & getLocationPath();
         std::vector<std::string>                            & getAllowedMethods();
-        
+        int                                                 & get_a(){return a;};
         std::string                                         & getRoot();
         std::vector<std::string>                            & getIndex();
         bool                                                & getAutoIndex();
-        std::string                                         & getUploadPath();
+        bool                                                & getUploadPath();
         std::pair<std::string, std::string>                 & getRedirection();
         size_t                                              & getClientMaxBodySize();
 
@@ -61,7 +63,7 @@ class Location
         void                                                setRoot(std::string root);
         void                                                setIndex(std::vector<std::string> index);
         void                                                setAutoIndex(bool autoIndex);
-        void                                                setUploadPath(std::string uploadPath);
+        void                                                setUploadPath(bool uploadPath);
         void                                                setRedirection(std::pair<std::string, std::string> redirection);
         void                                                setClientMaxBodySize(size_t clientMaxBodySize);
 
