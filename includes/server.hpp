@@ -39,7 +39,7 @@ class Location
         bool                                                _autoIndex;
         size_t                                              _clientMaxBodySize;
         bool                                                _uploadPath;
-        Cgi                                                 _cgi;
+        std::vector< Cgi >                                  _cgi;
         std::pair<std::string, std::string>                 _redirection;
         int     a;
 
@@ -60,8 +60,8 @@ class Location
         bool                                                & getUploadPath();
         std::pair<std::string, std::string>                 & getRedirection();
         size_t                                              & getClientMaxBodySize();
-        void                                                set_cgi(Cgi cgi);
-        Cgi &                                               get_cgi();
+        void                                                set_cgi(std::vector< Cgi > cgi);
+        std::vector< Cgi > &                                               get_cgi();
 
         void                                                setLocationNumber(std::string locationNumber);
         void                                                setLocationPath(std::string locationPath);
@@ -92,8 +92,11 @@ class Location
                 std::cout << _error_pages[i].first << " " << _error_pages[i].second << " ";
             std::cout << std::endl;
             std::cout << "cgi : ";
-            std::cout << _cgi.get_Cgi().first << " ";
-            std::cout << _cgi.get_Cgi().second << std::endl;
+            for (size_t i = 0; i < _cgi.size(); i++)
+            {
+                std::cout << _cgi[i].get_Cgi().first << " ";
+                std::cout << _cgi[i].get_Cgi().second << std::endl;
+            }
             std::cout << "uploadPath : " << _uploadPath << std::endl;
             // std::cout << std::endl;
             std::cout << "redirection : " << _redirection.first << " " << _redirection.second << std::endl;

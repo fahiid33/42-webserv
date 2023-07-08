@@ -122,7 +122,7 @@ void Server::setPort(size_t port)
     this->_port = port;
 }
 
-void Location::set_cgi(Cgi cgi)
+void Location::set_cgi(std::vector< Cgi >  cgi)
 {
     this->_cgi = cgi;
 }
@@ -181,7 +181,7 @@ void Server::setIndex(std::vector<std::string> index)
     this->_index = index;
 }
 
-Cgi & Location::get_cgi()
+std::vector< Cgi > & Location::get_cgi()
 {
     return this->_cgi;
 }

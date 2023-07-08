@@ -5,12 +5,17 @@ Cgi::Cgi() // should be Cgi(server)
 {
 }
 
+Cgi::Cgi(std::string path) // should be Cgi(server)
+{
+}
+
 Cgi::~Cgi()
 {
 }
 
 void Cgi::initEnv(Request const & req, std::string const & server_name, std::string const & root)
 {
+
     if (req.getHeaders().find("Content-Length") != req.getHeaders().end()) {
         this->env["CONTENT_LENGTH"] = req.getHeaders().find("Content-Length")->second;
     } else {
@@ -21,6 +26,8 @@ void Cgi::initEnv(Request const & req, std::string const & server_name, std::str
     if (req.getHeaders().find("Content-Type") != req.getHeaders().end())
         this->env["CONTENT_TYPE"] = req.getHeaders().find("Content-Type")->second;; // application/x-www-form-urlencoded or multipart/form-data, etc.
     this->env["GATEWAY_INTERFACE"] = "CGI/1.1";
+    if (req.getHeaders().find("Cookie") != req.getHeaders().end())
+        this->env["HTTP_COOKIE"] = req.getHeaders().find("Cookie")->second;
     this->env["REQUEST_METHOD"] = req.getMethod(); // GET, POST, HEAD
     this->env["SERVER_NAME"] = server_name; // kayna fl config, normally server object
     this->env["SCRIPT_NAME"] = req.getPath() + req.getFile(); // The name of the CGI script.

@@ -210,11 +210,13 @@ Request::Request(std::pair <Socket, Server> & client, std::vector<Server>& serve
     pattern.push_back('\n');
 
     request = client.first.getrequest();
+    std::cout << "REQUEST: " << std::endl;
     this->clear();
     std::vector<unsigned char>::iterator pos = std::search(request.begin(), request.end(), pattern.begin(), pattern.end());
     std::string str(request.begin(), pos + 2);
 
     this->request = str;
+    std::cout << str << std::endl;
     file.str(str);
     std::getline(file, line);
     this->parseFirstLine(line);

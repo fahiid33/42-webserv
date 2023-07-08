@@ -204,13 +204,11 @@ void Response::HandleGet(Request &req, Location &loc)
     std::string contentType = getContentType(request_resource, mimeTypes);
     std::vector<std::string>::iterator it;
     std::ifstream file;
-
-    std::cout << "zbiiiiiiiíi " << request_resource << std::endl;
+    loc.print_location();
     if (!file_exists(request_resource.c_str())) {
         generateErrorPage(404, loc);
         return ;
     }
-    std::cout << "CGI3" << std::endl;
     if (isDirectory(request_resource.c_str())) {
         if (request_resource[request_resource.length() - 1] != '/')
         {
@@ -234,12 +232,10 @@ void Response::HandleGet(Request &req, Location &loc)
             }
         }
     }
-    std::cout << "CGI2" << std::endl;
     if (access(request_resource.c_str(), R_OK) == -1) {
         generateErrorPage(403, loc);
         return ;
     }
-    std::cout << "CGI1" << std::endl;
     if (req.getFile().find(".py") + 3 != req.getFile().size()) {
         setHeader("Status", "200 OK");
         setStatusCode(200);
@@ -247,17 +243,26 @@ void Response::HandleGet(Request &req, Location &loc)
         file.open(request_resource, std::ios::binary | std::ios::ate);
         setHeader("Content-Length", std::to_string(file.tellg()));
         setHeader("Connection", "Keep-Alive");
+        if (req.getHeaders().find("Cookie") != req.getHeaders().end())
+            setHeader("Set-Cookie", req.getHeaders().find("Cookie")->second);
+        else
+            setHeader("Set-Cookie", "lala=hehe; Path=/");
         file.close();
         this->file = request_resource;
+        
         return ;
+
     }
-    std::cout << "CGI4" << std::endl;
+    
     // check cgi
-    loc.print_location();
     if (loc.get_cgi().OK()) {
-        std::cout << "CGI" << std::endl;
         loc.get_cgi().runCgi(req, loc, *this);
         return;
+    }
+    else
+    {
+        generateErrorPage(503, loc);
+        return ;
     }
 }
 

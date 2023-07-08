@@ -211,8 +211,9 @@ void Config::parse_config()
                             while(iss >> tmp >> value)
                                 errorPage.push_back(std::make_pair(tmp, value));
                             currentLocation.setError_pages(errorPage);
-                        } else if(directive == "cgi" && iss >> value >> value1) {
-                            currentLocation.get_cgi().set_Cgi(std::make_pair(value, value1));
+                        } else if(directive == "cgi") {
+                            while(iss >> tmp >> value)
+                                currentLocation.get_cgi().push_back(Cgi(tmp, value));
                         } else if (directive == "allow_methods") {
                             while(iss >> value)
                                 currentLocation.getAllowedMethods().push_back(value);
