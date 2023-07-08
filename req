@@ -1,7 +1,0 @@
-GET /index.html HTTP/1.1
-Connection: keep-alive
-Host: localhost:8080
-
-
-czxczx
-cxzczx

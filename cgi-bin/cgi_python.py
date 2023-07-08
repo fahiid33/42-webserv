@@ -50,62 +50,62 @@
 
 #~~~~~~~use it with postman binary data~~~~~~~~~~~~~~~~~~~~~~~~~~~upload binary files~~~~~~~~~~~~~~~~~~~~start~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# import sys
-# import io
-# import os
+import sys
+import io
+import os
 
-# # Wrap sys.stdin with io.BufferedReader to read binary data
-# sys.stdin = io.BufferedReader(sys.stdin.buffer)
+# Wrap sys.stdin with io.BufferedReader to read binary data
+sys.stdin = io.BufferedReader(sys.stdin.buffer)
 
-# # Read the request body as binary data
-# request_body = sys.stdin.read()
+# Read the request body as binary data
+request_body = sys.stdin.read()
 
-# # Process the binary data
-# # Modify this section according to your specific processing logic
-# if request_body:
-#     # Process the binary data as needed
-#     # For example, you can save it to a file
-#     with open("/Users/hlachkar/weba/Upload/file.jpg", "wb") as f: # change the path to env variable
-#         f.write(request_body)
-#     message = "Binary data received and processed successfully"
-# else:
-#     message = "No binary data was received"
+# Process the binary data
+# Modify this section according to your specific processing logic
+if request_body:
+    # Process the binary data as needed
+    # For example, you can save it to a file
+    with open("/Users/hlachkar/weba/Upload/block.html", "wb") as f: # change the path to env variable
+        f.write(request_body)
+    message = "Binary data received and processed successfully"
+else:
+    message = "No binary data was received"
 
-# # Print the response
-# print("Content-Type: text/html\n")
-# print("<html><body>")
-# print(f"<p>{message}</p>")
-# print("</body></html>")
+# Print the response
+print("Content-Type: text/html\n")
+print("<html><body>")
+print(f"<p>{message}</p>")
+print("</body></html>")
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~upload binary files~~~~~~~~~~~~~~~~~~~~~end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~show the posted data~~~~~~~~~~~~~~~~~~~~~~start~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-import os
-import sys
+# import os
+# import sys
 
-# Get the content length from the environment variables
+# # Get the content length from the environment variables
 
-# Read the specified number of bytes from stdin
+# # Read the specified number of bytes from stdin
 
-try:
-    content_length = int(os.environ.get('CONTENT_LENGTH', 0))
-    request_body = sys.stdin.read(content_length)
-except ValueError:
-    request_body = "no body"
+# try:
+#     content_length = int(os.environ.get('CONTENT_LENGTH', 0))
+#     request_body = sys.stdin.read(content_length)
+# except ValueError:
+#     request_body = "no body"
 
-print ('<html>')
-print ('<head>')
-print ('<title>Hello World - First CGI Program</title>')
-print ('</head>')
-print ('<body>')
-print ('<h2>Hello World! This is my first CGI program</h2>')
-print(request_body)
+# print ('<html>')
+# print ('<head>')
+# print ('<title>Hello World - First CGI Program</title>')
+# print ('</head>')
+# print ('<body>')
+# print ('<h2>Hello World! This is my first CGI program</h2>')
+# print(request_body)
 
-# for param in os.environ.keys():
-#     print ("%20s: %s" % (param, os.environ[param]))
+# # for param in os.environ.keys():
+# #     print ("%20s: %s" % (param, os.environ[param]))
 
 
-print ('</body>')
-print ('</html>')
+# print ('</body>')
+# print ('</html>')
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~show the posted data~~~~~~~~~~~~~~~~~~~~~~~~~~~~end~~~~~~~~~~~~~~~~~~~~~~~

@@ -51,7 +51,7 @@ class Response
 
         std::string toString() const;
         void setHeader(const std::string& key, const std::string& value);
-        void generateErrorPage(int code);
+        void generateErrorPage(int code, Location const & loc);
         void initErrorMessages();
         std::map<std::string, std::string> &getHeaders();
         void clear();
@@ -71,9 +71,11 @@ class Response
         std::string getContentType(const std::string& file , std::map<std::string, std::string>& mime_t);
         std::map<std::string, std::string> mime_types_init();
         void    auto_indexing(const char *path);
-        void    HandleGet(Request & req, Location & loc, Server & server);
-        void    HandlePost(Request & req, Location & loc, Server & server);
-        void    HandleDelete(Request & req, Location & loc, Server & server);
+        void    HandleGet(Request & req, Location & loc);
+        void    HandlePost(Request & req, Location & loc);
+        void    HandleDelete(Request & req, Location & loc);
         void    prepare_response(Request & req, Server & server);
-        const Location   & match_loc( Server & server, std::string const & path);
+        std::vector<Location>::iterator  match_loc(Server & server, std::string const & path);
+        int write_file_in_path(Location &client, std::vector<unsigned char> content, std::string path);
+        int deleteDirectory(const char *path);
 };

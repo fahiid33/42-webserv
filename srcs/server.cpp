@@ -10,13 +10,11 @@ Server::Server()
     _ip = "";
     _serverNames.clear();
     _locations.clear();
-    _error_pages.clear();
     _index.clear();
     _root = "";
     _default = false;
     end_server = 0;
     max_sd = 0;
-    _cgi.clear();
 }
 
 Server::~Server()
@@ -114,7 +112,7 @@ std::string &Server::getIp()
     return this->_ip;
 }
 
-std::vector<std::pair<size_t, std::string> > &Server::getError_pages()
+std::vector<std::pair<int, std::string> > Location::getError_pages() const
 {
     return this->_error_pages;
 }
@@ -124,7 +122,7 @@ void Server::setPort(size_t port)
     this->_port = port;
 }
 
-void Server::set_cgi(Cgi cgi)
+void Location::set_cgi(Cgi cgi)
 {
     this->_cgi = cgi;
 }
@@ -158,7 +156,7 @@ void Location::setClientMaxBodySize(size_t clientMaxBodySize)
     this->_clientMaxBodySize = clientMaxBodySize;
 }
 
-void Server::setError_pages(std::vector<std::pair<size_t, std::string> > error_pages)
+void Location::setError_pages(std::vector<std::pair<int, std::string> > error_pages)
 {
     this->_error_pages = error_pages;
 }
@@ -183,7 +181,7 @@ void Server::setIndex(std::vector<std::string> index)
     this->_index = index;
 }
 
-Cgi & Server::get_cgi()
+Cgi & Location::get_cgi()
 {
     return this->_cgi;
 }

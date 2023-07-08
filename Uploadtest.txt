@@ -1,9 +1,0 @@
-i want to fuk bitches
-lorem ipsum 200 characters
-```
-I want to get the first line of the file, and then the last line of the file. I know how to get the first line, but I don't know how to get the last line. I tried this:
-```
-more
-```
-but it just prints the whole file. I also tried this:
-```

@@ -1,13 +1,13 @@
 
 #include "../includes/socket.hpp"
 
-Socket::Socket() : s_fd(-1), close_conn(0), resp(Response()), req(Request()), address(), already_bind(0), write_done(1), request(), read_done(0)
+Socket::Socket() : s_fd(-1), address(), resp(Response()), req(Request()), close_conn(0), write_done(0), read_done(0), request(), already_bind(0)
 {
 }
 
 Socket::Socket(int s_fd, sockaddr_in address)
 {
-    this->write_done = 1;
+    this->write_done = 0;
     this->read_done = 0;
     this->already_bind = 0;
     this->s_fd = s_fd;
@@ -20,7 +20,7 @@ Socket::Socket(int s_fd, sockaddr_in address)
 
 Socket::~Socket()
 {
-    this->write_done = 1;
+    this->write_done = 0;
     this->close_conn = 0;
     this->read_done = 0;
     this->request.clear();
@@ -32,7 +32,7 @@ Socket::~Socket()
 
 void Socket::clear()
 {
-    this->write_done = 1;
+    this->write_done = 0;
     this->close_conn = 0;
     this->read_done = 0;
     this->request.clear();

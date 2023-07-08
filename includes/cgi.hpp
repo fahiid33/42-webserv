@@ -1,7 +1,7 @@
 #pragma once
 
 #include "request.hpp"
-// #include "response.hpp"
+#include "response.hpp"
 
 
 
@@ -16,13 +16,14 @@ class Cgi
     public :
     Cgi();
     ~Cgi();
-    std::pair<std::string, std::string> & get_Cgi();
+    std::pair<std::string, std::string> &  get_Cgi();
     void set_Cgi(std::pair<std::string, std::string> const &cgi);
     void initEnv(Request const & req, std::string const & server_name, std::string const & root);
     char **getEnv();
     // void cgi_exec(Request &req, Response &resp, Server &server);
     void print_cgi();
     void clear();
+    void runCgi(Request &req, Location &loc, Response &resp);
     int  OK(){
         if (this->_cgi.first.empty() || this->_cgi.second.empty())
             return 0;

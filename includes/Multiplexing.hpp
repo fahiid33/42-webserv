@@ -40,8 +40,9 @@ class MultiPlexing
 {
     public :
         typedef std::vector< std::pair<Socket, Server> > Clients;
+        typedef std::unordered_map<int, std::vector<Server> > Servers;
     private :
-        Server server;
+        // Server server;
         IOsets io;
         MultiPlexing::Clients clients;
         int max_sd;
@@ -51,10 +52,10 @@ class MultiPlexing
         MultiPlexing();
         ~MultiPlexing();
 
-        void setup_server(std::unordered_map<int, std::vector<Server> > & servers);
+        void setup_server(Servers & servers);
         int  getMaxSd();
         void setMaxSd(int max_sd);
-        void handleNewConnection(Server & server, std::vector<std::pair <Socket, Server> > & clients);
+        void handleNewConnection(Server & server, Clients & clients);
 
         const MultiPlexing::Clients & getCLients() const;
 

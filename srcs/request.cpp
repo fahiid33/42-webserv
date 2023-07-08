@@ -100,9 +100,6 @@ void Request::parseFirstLine(std::string &line)
     std::string str = this->request;
     searchThrow(method, line, " ");
     if (method != "GET" && method != "POST" && method != "DELETE") {
-        std::cout << "method: " << method << std::endl;
-        if (method == "PUT")
-            throw std::invalid_argument("200");
         throw std::invalid_argument("405");
     }
     searchThrow(path, line, " ");
@@ -136,7 +133,6 @@ void Request::ParseHeaders(std::istringstream &file)
         searchThrow(value, line, "\r");
         if (key == "Host") {
             host = value.substr(0, value.find(':'));
-            std::cout << "host: " << host << std::endl;
         } else if (key == "Connection") {
             if (value == "keep-alive")
                 keepAlive = true;
@@ -174,7 +170,6 @@ void Request::ParseHeaders(std::istringstream &file)
             value = value.substr(value.find_first_of("/"), value.length() - 1);
             if (value.find_last_of('/') != std::string::npos)
                 value = value.substr(0, value.find_last_of('/') + 1);
-            std::cout << YELLOW1 << "referer: " << value  << std::endl;
         }
         else if (key == "Keep-Alive") {
             std::string chck;
@@ -185,7 +180,6 @@ void Request::ParseHeaders(std::istringstream &file)
             } else if (value.find_first_not_of("0123456789") != std::string::npos)
                 throw std::invalid_argument("400");
             else {
-                keepAlive = true;
                 timeOut = stoi(value);
             }
         }
@@ -217,11 +211,10 @@ Request::Request(std::pair <Socket, Server> & client, std::vector<Server>& serve
 
     request = client.first.getrequest();
     this->clear();
-    auto pos = std::search(request.begin(), request.end(), pattern.begin(), pattern.end());
+    std::vector<unsigned char>::iterator pos = std::search(request.begin(), request.end(), pattern.begin(), pattern.end());
     std::string str(request.begin(), pos + 2);
 
     this->request = str;
-    std::cout << "request: " << str << std::endl;
     file.str(str);
     std::getline(file, line);
     this->parseFirstLine(line);

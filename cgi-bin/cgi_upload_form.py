@@ -23,7 +23,7 @@ except ImportError:
 sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
 
 form = cgi.FieldStorage()
-
+ 
 # A nested FieldStorage instance holds the file
 fileitem = form['file']
 upload_path = form['upload_path']

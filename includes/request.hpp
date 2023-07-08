@@ -32,7 +32,6 @@ class Request {
         time_t      started;
         std::string request;
         std::string method;
-        size_t      port;
         std::string path;
         std::string file;
         std::string boundary;

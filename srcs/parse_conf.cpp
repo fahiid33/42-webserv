@@ -36,16 +36,27 @@ Location::Location()
     _root = "";
     _index.clear();
     _autoIndex = false;
+    _error_pages.clear();
     _uploadPath = "";
     _redirection.first = "";
     _redirection.second = "";
-    // _cgi_extension.clear();
-    // _cgi_path.clear();
-
+    _cgi = Cgi();
 }
 
 Location::~Location()
 {
+    _locationNumber = "";
+    _locationPath = "";
+    _clientMaxBodySize = 0;
+    _allowedMethods.clear();
+    _root = "";
+    _index.clear();
+    _autoIndex = false;
+    _error_pages.clear();
+    _uploadPath = "";
+    _redirection.first = "";
+    _redirection.second = "";
+    _cgi.clear();
 }
 
 std::string &Location::getLocationNumber()
@@ -178,13 +189,6 @@ void Config::parse_config()
             } else if (directive == "index") {
                 while(iss >> value)
                     currentServer.getIndex().push_back(value);
-            } else if(directive == "cgi" && iss >> value >> value1) {
-                    currentServer.get_cgi().set_Cgi(std::make_pair(value, value1));
-            } else if (directive == "error_page") {
-                std::vector<std::pair<size_t, std::string> > errorPage;
-                while(iss >> tmp >> value)
-                    errorPage.push_back(std::make_pair(tmp, value));
-                currentServer.setError_pages(errorPage);
             } else if (directive == "location"){
                 if (iss >> value) {
                     currentLocation.setLocationPath(value);
@@ -202,6 +206,13 @@ void Config::parse_config()
                             break;
                         } else if (directive == "root" && iss >> value) {
                             currentLocation.setRoot(value);
+                        } else if (directive == "error_page") {
+                            std::vector<std::pair<int, std::string> > errorPage;
+                            while(iss >> tmp >> value)
+                                errorPage.push_back(std::make_pair(tmp, value));
+                            currentLocation.setError_pages(errorPage);
+                        } else if(directive == "cgi" && iss >> value >> value1) {
+                            currentLocation.get_cgi().set_Cgi(std::make_pair(value, value1));
                         } else if (directive == "allow_methods") {
                             while(iss >> value)
                                 currentLocation.getAllowedMethods().push_back(value);
