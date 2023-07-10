@@ -5,8 +5,10 @@ Cgi::Cgi() // should be Cgi(server)
 {
 }
 
-Cgi::Cgi(std::string path) // should be Cgi(server)
+
+Cgi::Cgi(std::string path, std::string ext)
 {
+    this->_cgi = std::make_pair(path, ext);
 }
 
 Cgi::~Cgi()
@@ -46,7 +48,7 @@ void Cgi::print_cgi()
     std::cout << "CGI: " << this->_cgi.first << " " << this->_cgi.second << std::endl;
 }
 
-std::pair<std::string, std::string> & Cgi::get_Cgi()
+std::pair<std::string, std::string> const & Cgi::get_Cgi() const
 {
     return this->_cgi;
 }
@@ -78,6 +80,7 @@ void Cgi::clear()
 
 void Cgi::runCgi(Request &req, Location &loc, Response &_resp)
 {
+    
     const int BUFFER_SIZE = 4096;
     char buffer[BUFFER_SIZE];
     std::stringstream output;
@@ -86,6 +89,7 @@ void Cgi::runCgi(Request &req, Location &loc, Response &_resp)
     int fdin[2];
     int fdout[2];
     pid_t child_pid;
+    int status;
     int fdtmp = dup(0);
     // execute cgi
     this->initEnv(req, "localhost", loc.getRoot());
@@ -104,8 +108,11 @@ void Cgi::runCgi(Request &req, Location &loc, Response &_resp)
         av[0] = strdup(this->get_Cgi().first.c_str());
         av[1] = strdup(request_resource.c_str());
         av[2] = NULL;
-        execve(av[0], av, this->getEnv());
-        exit(0);
+        if (execve(av[0], av, this->getEnv()) == -1)
+        {
+            
+            exit(1);
+        }
     }
     close(fdout[1]);
     close(fdin[0]);
@@ -118,8 +125,14 @@ void Cgi::runCgi(Request &req, Location &loc, Response &_resp)
     while ((bytesRead = read(fdout[0], buffer, BUFFER_SIZE)) > 0)
         output.write(buffer, bytesRead);
     close (fdout[0]);
-    wait (NULL);
+    wait (&status);
     dup2(fdtmp, 0);
+    close(fdtmp);
+    if (status != 0)
+    {
+        _resp.generateErrorPage(500, loc);
+        return ;
+    }
     _resp.setHeader("Status", "200 OK");
     _resp.setHeader("Content-Type", "text/html; charset=UTF-8");
     _resp.setHeader("Connection", "close");

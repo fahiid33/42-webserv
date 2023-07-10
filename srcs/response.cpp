@@ -204,7 +204,7 @@ void Response::HandleGet(Request &req, Location &loc)
     std::string contentType = getContentType(request_resource, mimeTypes);
     std::vector<std::string>::iterator it;
     std::ifstream file;
-    loc.print_location();
+
     if (!file_exists(request_resource.c_str())) {
         generateErrorPage(404, loc);
         return ;
@@ -236,7 +236,15 @@ void Response::HandleGet(Request &req, Location &loc)
         generateErrorPage(403, loc);
         return ;
     }
-    if (req.getFile().find(".py") + 3 != req.getFile().size()) {
+    std::string ext("");
+    std::string ext1("");
+
+    if (!loc.get_cgi().empty()) {
+        ext = (loc.get_cgi()[0].get_Cgi().second);
+        ext1 = (loc.get_cgi()[1].get_Cgi().second);
+    }
+
+    if (loc.get_cgi().empty() || (req.getFile().find(ext) + ext.length() != req.getFile().size() && req.getFile().find(ext1) + ext1.length() != req.getFile().size())) {
         setHeader("Status", "200 OK");
         setStatusCode(200);
         setHeader("Content-Type", contentType);
@@ -253,17 +261,20 @@ void Response::HandleGet(Request &req, Location &loc)
         return ;
 
     }
-    
+    else if (req.getFile().find(ext) + ext.length() == req.getFile().size()) {
+        if (loc.get_cgi()[0].OK()) {
+            loc.get_cgi()[0].runCgi(req, loc, *this);
+            return ;
+        }
+
+    } else if (req.getFile().find(ext1) + ext1.length() == req.getFile().size()) {
+        if (loc.get_cgi()[1].OK()) {
+            loc.get_cgi()[1].runCgi(req, loc, *this);
+            return ;
+        }
+    }
+    generateErrorPage(503, loc);
     // check cgi
-    if (loc.get_cgi().OK()) {
-        loc.get_cgi().runCgi(req, loc, *this);
-        return;
-    }
-    else
-    {
-        generateErrorPage(503, loc);
-        return ;
-    }
 }
 
 void Response::generateErrorPage(int code, Location const &loc)
@@ -389,13 +400,23 @@ int	Response::write_file_in_path(Location &client, std::vector<unsigned char> co
 
 void Response::HandlePost(Request &req, Location &loc)
 {
-    std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
+    std::string ext("");
+    std::string ext1("");
 
-    if (req.getFile().find(".py") + 3 != req.getFile().size() && loc.getUploadPath()) {
+    std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
+   
+    if (!loc.get_cgi().empty()) {
+        ext = (loc.get_cgi()[0].get_Cgi().second);
+        ext1 = (loc.get_cgi()[1].get_Cgi().second);
+    } 
+    std::cout << ext << " " << ext1 << std::endl;
+
+    if (loc.getUploadPath() && (loc.get_cgi().empty() || (req.getFile().find(ext) + ext.length() != req.getFile().size() && req.getFile().find(ext1) + ext1.length() != req.getFile().size()))) {
         if (loc.getClientMaxBodySize() < req.getBody().size()) {
             generateErrorPage(413, loc);
             return ;
         }
+        std::cout << "HHAHAHAHAHHA" << std::endl;
         this->write_file_in_path(loc, req.getBody(), request_resource);
         setHeader("Status", "201 Created");
         setHeader("Content-Type", "text/html");
@@ -412,14 +433,20 @@ void Response::HandlePost(Request &req, Location &loc)
         _resp.second = _resp.first.length();
         return ;
     }
-    if (loc.get_cgi().OK())
-    {
-        loc.get_cgi().runCgi(req, loc, *this);
-        return;
+        
+
+    else if (req.getFile().find(ext) + ext.length() == req.getFile().size()) {
+        if (loc.get_cgi()[0].OK()) {
+            loc.get_cgi()[0].runCgi(req, loc, *this);
+            return ;
+        }
+    } else if (req.getFile().find(ext1) + ext1.length() == req.getFile().size()) {
+        if (loc.get_cgi()[1].OK()) {
+            loc.get_cgi()[1].runCgi(req, loc, *this);
+            return ;
+        }
     }
-    else
-        generateErrorPage(503, loc);
-    return ;
+    generateErrorPage(503, loc);
 }
 
 int Response::deleteDirectory(const char *path) {

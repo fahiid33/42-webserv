@@ -15,8 +15,10 @@ class Cgi
 
     public :
     Cgi();
+    // Cgi(Cgi const & cgi);
     ~Cgi();
-    std::pair<std::string, std::string> &  get_Cgi();
+    Cgi(std::string path, std::string ext);
+    std::pair<std::string, std::string> const &  get_Cgi() const;
     void set_Cgi(std::pair<std::string, std::string> const &cgi);
     void initEnv(Request const & req, std::string const & server_name, std::string const & root);
     char **getEnv();
@@ -26,7 +28,7 @@ class Cgi
     void runCgi(Request &req, Location &loc, Response &resp);
     int  OK(){
         if (this->_cgi.first.empty() || this->_cgi.second.empty())
-            return 0;
+                  return 0;
         return 1;
     };
 };

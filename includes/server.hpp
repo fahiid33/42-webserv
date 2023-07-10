@@ -61,7 +61,7 @@ class Location
         std::pair<std::string, std::string>                 & getRedirection();
         size_t                                              & getClientMaxBodySize();
         void                                                set_cgi(std::vector< Cgi > cgi);
-        std::vector< Cgi > &                                               get_cgi();
+        std::vector< Cgi > &                                get_cgi();
 
         void                                                setLocationNumber(std::string locationNumber);
         void                                                setLocationPath(std::string locationPath);

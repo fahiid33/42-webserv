@@ -37,10 +37,10 @@ Location::Location()
     _index.clear();
     _autoIndex = false;
     _error_pages.clear();
-    _uploadPath = "";
+    _uploadPath = 0;
     _redirection.first = "";
     _redirection.second = "";
-    _cgi = Cgi();
+    _cgi.clear();
 }
 
 Location::~Location()
@@ -53,7 +53,7 @@ Location::~Location()
     _index.clear();
     _autoIndex = false;
     _error_pages.clear();
-    _uploadPath = "";
+    _uploadPath = 0;
     _redirection.first = "";
     _redirection.second = "";
     _cgi.clear();
@@ -149,6 +149,10 @@ void Config::parse_config()
     Server currentServer;
     Location currentLocation;
     std::string defaultS;
+    int open = 0;
+    int s = 0;
+    int l = 0;
+    int r = 0;
 
     while (getline(this->_Configfile, line))
     {
@@ -156,11 +160,22 @@ void Config::parse_config()
             continue;
         else
         {
-            
+            //  "fgghnghng"
             iss.str(line);
+            std::cout << line << std::endl;
             if(!(iss >> directive))
                 break;
-            if (directive == "listen" && iss >> value) {
+            if (directive == "server")
+            {
+                if (s >= 1)
+                    throw std::invalid_argument("Invalid server directive");
+                s += 1;
+            }
+            else if (directive == "{")
+                open += 1;
+            else if (directive == "listen" && iss >> value) {
+                if (currentServer.getPort() != 0)
+                    throw std::invalid_argument("Invalid listen directive");
                 std::string defaultS;
                 if (iss >> defaultS && defaultS != "default_server")
                     throw std::invalid_argument("Invalid default_server value: " + defaultS);
@@ -182,6 +197,12 @@ void Config::parse_config()
                     currentServer.setPort(std::stoi(port));
                 }
             } else if (directive == "root" && iss >> value) {
+                if (r >= 1)
+                    throw std::invalid_argument("Invalid sroot directive");
+                r += 1;
+                iss >> value1;
+                if (!iss.fail())
+                    throw std::invalid_argument("Invalid root directive");
                 currentServer.setRoot(value);
             } else if (directive == "server_name") {
                 while(iss >> value)
@@ -193,6 +214,15 @@ void Config::parse_config()
                 if (iss >> value) {
                     currentLocation.setLocationPath(value);
                 }
+                else
+                    throw std::invalid_argument("Invalid location directive");
+                iss >> value1;
+                if (!iss.fail())
+                    throw std::invalid_argument("Invalid root directive");
+                int o_tmp = open;
+                open = 0;
+                std::cout << "parsing location" << std::endl;
+                l = 0;
                 while (getline(this->_Configfile, line))
                 {
                     if (line.empty() || line[0] == '#' || line.find_first_not_of(" \t") == std::string::npos)
@@ -201,10 +231,22 @@ void Config::parse_config()
                     {
                         iss.clear();
                         iss.str(line);
+                        std::cout << line << std::endl;
+
                         // Parse location-specific directives
                         if(!(iss >> directive)) {
                             break;
-                        } else if (directive == "root" && iss >> value) {
+                        }
+                        if (directive == "{") {
+                            open += 1;
+                        }
+                        else if (directive == "root" && iss >> value) {
+                            if (l >= 1)
+                                throw std::invalid_argument("Invalid lroot directive");
+                            l += 1;
+                            iss >> value1;
+                            if (!iss.fail())
+                                throw std::invalid_argument("Invalid root directive");
                             currentLocation.setRoot(value);
                         } else if (directive == "error_page") {
                             std::vector<std::pair<int, std::string> > errorPage;
@@ -212,8 +254,17 @@ void Config::parse_config()
                                 errorPage.push_back(std::make_pair(tmp, value));
                             currentLocation.setError_pages(errorPage);
                         } else if(directive == "cgi") {
-                            while(iss >> tmp >> value)
-                                currentLocation.get_cgi().push_back(Cgi(tmp, value));
+                            while(iss >> value >> value1)
+                            {
+                                if (value1 != ".py" && value1 != ".pl")
+                                    throw std::invalid_argument("Invalid cgi extension: " + value1);
+                                if (currentLocation.get_cgi().size() >= 2 || value.empty() || value1.empty())
+                                    throw std::invalid_argument("Invalid cgi directive");
+                                currentLocation.get_cgi().push_back(Cgi(value, value1));
+                            }
+                            if (iss.fail() && (!iss.eof() || currentLocation.get_cgi().back().get_Cgi().first != value))
+                                throw std::invalid_argument("Invalid cgi value: " + value);
+                            
                         } else if (directive == "allow_methods") {
                             while(iss >> value)
                                 currentLocation.getAllowedMethods().push_back(value);
@@ -232,31 +283,58 @@ void Config::parse_config()
                         } else if(directive == "autoindex" && iss >> value) {
                             currentLocation.setAutoIndex(value == "on" ? true : false);
                         } else if (directive == "max_body_size" && iss >> tmp) {
-                                currentLocation.setClientMaxBodySize(tmp);
+                            iss >> value1;
+                            if (!iss.fail())
+                                throw std::invalid_argument("Invalid root directive");
+                            currentLocation.setClientMaxBodySize(tmp);
                         }
                         else if (directive == "}") {
-                            currentServer.getLocations().push_back(currentLocation);
-                            currentLocation = Location();
-                            break;
+                            if (open == 0)
+                                throw std::invalid_argument("Invalid closing bracket");
+                            else if (open == 1) {
+                                if (l == 0)
+                                    throw std::invalid_argument("Invalid root directive");
+                                currentServer.getLocations().push_back(currentLocation);
+                                currentLocation = Location();
+                                break;
+                            }
+                            open -= 1;
                         }
+                        else
+                            throw std::invalid_argument("Invalid directive: " + directive);
                     }
                 }
+                open = o_tmp;
             }
             else if (directive == "}") {
-                if (currentServer.getDefault()) {
-                    if (!this->_Servers.empty() && this->_Servers[currentServer.getPort()][0].getDefault() == true) {
-                        throw std::invalid_argument("two default servers");
+                if (open <= 0)
+                    throw std::invalid_argument("Invalid closing bracket");
+                else if (open == 1)
+                {
+                    if (r == 0)
+                        throw std::invalid_argument("Invalid root directive");
+                    if (currentServer.getDefault()) {
+                        if (!this->_Servers.empty() && this->_Servers[currentServer.getPort()][0].getDefault() == true) {
+                            throw std::invalid_argument("two default servers");
+                        }
+                        this->_Servers[currentServer.getPort()].push_back(this->_Servers[currentServer.getPort()][0]);
+                        this->_Servers[currentServer.getPort()][0] = currentServer;
+                    } else {
+                        this->_Servers[currentServer.getPort()].push_back(currentServer);
                     }
-                    this->_Servers[currentServer.getPort()].push_back(this->_Servers[currentServer.getPort()][0]);
-                    this->_Servers[currentServer.getPort()][0] = currentServer;
-                } else {
-                    this->_Servers[currentServer.getPort()].push_back(currentServer);
+                    currentServer = Server();
+                    s = 0;
+                    r = 0;
                 }
-                currentServer = Server();
+                open -= 1;
             }
+            else
+                throw std::invalid_argument("Invalid directive: " + directive);
             iss.clear();
         }
         
     }
+    if (open < 0 || open >= 1)
+        throw std::invalid_argument("Invalid closing bracket");
     this->_Configfile.close();
 }
