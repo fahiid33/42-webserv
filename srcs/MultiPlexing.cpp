@@ -156,7 +156,6 @@ void MultiPlexing::handleWriteData(Socket &sock)
         }
         else
             sock.setWrite_done(1);
-        return ;
     }
     else if ((sock.get_Resp().getOffset() + 1024) > strtoul(sock.get_Resp().getHeaders().find("Content-Length")->second.c_str(), NULL, 10) && sock.get_Resp().getFile() != "")
     {
@@ -176,7 +175,7 @@ void MultiPlexing::handleWriteData(Socket &sock)
         rc = write(sock.getSocket_fd() , buffer, 1024);
         sock.get_Resp().setOffset(sock.get_Resp().getOffset() + rc);
     }
-    if (rc < 0)
+    if (rc <= 0)
     {
         std::cerr << "Error writing to client socket" << std::endl;
         sock.setWrite_done(1);

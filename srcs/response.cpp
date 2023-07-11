@@ -249,17 +249,19 @@ void Response::HandleGet(Request &req, Location &loc)
         if (loc.get_cgi().size() > 1)
             ext1 = (loc.get_cgi()[1].get_Cgi().second);
     }
+    std::string reqext("");
+    if (req.getFile().find_last_of(".") != std::string::npos)
+        reqext = req.getFile().substr(req.getFile().find_last_of("."));
+    
 
-    std::string reqext = req.getFile().substr(req.getFile().find_last_of("."));
-    std::cout << "reqext: " << reqext << std::endl;
-    if (loc.get_cgi().empty() || (ext != reqext && ext1 != reqext)) {
+    if (loc.get_cgi().empty() || ((ext == "" || ext != reqext) && (ext1 == "" || ext1 != reqext))){
         setHeader("Status", "200 OK");
         setStatusCode(200);
         setHeader("Content-Type", contentType);
         file.open(request_resource, std::ios::binary | std::ios::ate);
         setHeader("Content-Length", std::to_string(file.tellg()));
         if (req.getHeaders().find("Cookie") == req.getHeaders().end())
-            setHeader("Set-Cookie", "lala=hehe; Path=/");
+            setHeader("Set-Cookie", "lala=pepe; Path=/");
         file.close();
         this->file = request_resource;
         return ;
@@ -409,9 +411,8 @@ int	Response::write_file_in_path(Location &client, std::vector<unsigned char> co
 void Response::HandlePost(Request &req, Location &loc)
 {
     std::vector<std::string>::iterator it;
-
     std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
-        std::cout << "reque " << request_resource << std::endl;
+
     if (isDirectory(request_resource.c_str())) {
             if (request_resource[request_resource.length() - 1] != '/')
                 request_resource += "/";
@@ -433,10 +434,12 @@ void Response::HandlePost(Request &req, Location &loc)
         if (loc.get_cgi().size() > 1)
             ext1 = (loc.get_cgi()[1].get_Cgi().second);
     }
+    std::string reqext("");
+    if (req.getFile().find_last_of(".") != std::string::npos)
+        reqext = req.getFile().substr(req.getFile().find_last_of("."));
+    
 
-    std::string reqext = req.getFile().substr(req.getFile().find_last_of("."));
-
-    if (loc.getUploadPath() && (loc.get_cgi().empty() || (ext != reqext && ext1 != reqext))) {
+    if (loc.getUploadPath() && (loc.get_cgi().empty() || ((ext == "" || ext != reqext) && (ext1 == "" || ext1 != reqext)))) {
         if (loc.getClientMaxBodySize() < req.getBody().size()) {
             generateErrorPage(413, loc);
             return ;

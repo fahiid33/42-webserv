@@ -21,7 +21,7 @@ int main(int ac, char **av)
         mp.setup_server(conf.getServers());
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
-        return 20;
+        return 1;
     }
     return 0;
 }
