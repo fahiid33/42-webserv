@@ -260,6 +260,11 @@ std::string Request::getMethod() const
     return this->method;
 }
 
+void Request::setFile(std::string file)
+{
+    this->file = file;
+}
+
 std::string Request::getQuery() const
 {
     return this->query;

@@ -78,11 +78,8 @@ void MultiPlexing::handleReadData(std::pair <Socket, Server> & client, std::vect
     if (pos != client.first.getrequest().end())
     {
         if (!client.first.getReq().getHeaders().empty())
-            // get the body
             client.first.getReq().setBody(std::vector<unsigned char>(pos + 4, client.first.getrequest().end()));
-            //----can be optimized 1 & 2 & 3
         else
-        // if the header not inizialized yet
             initializeRequest(client, servers);
 
         // perhaps the body is in the first chunk so we check if the body is complete, also if it another chunk we perform the same check
@@ -137,11 +134,14 @@ void MultiPlexing::handleWriteData(Socket &sock)
     char buffer[1025];
     bzero(buffer, 1025);
     int rc = 0;
-    
     sock.getReq().setStarted(time(NULL));
     sock.setWrite_done(0);
     if (!sock.get_Resp().getIsOpen())
     {
+        if (sock.getReq().getConn())
+            sock.get_Resp().setHeader("Connection", "Keep-Alive");
+        else
+            sock.get_Resp().setHeader("Connection", "close");
         rc = write(sock.getSocket_fd() , sock.get_Resp().toString().c_str(), sock.get_Resp().toString().length());
         if (sock.get_Resp().getFile() != "")
         {
@@ -158,7 +158,7 @@ void MultiPlexing::handleWriteData(Socket &sock)
             sock.setWrite_done(1);
         return ;
     }
-    if ((sock.get_Resp().getOffset() + 1024) > strtoul(sock.get_Resp().getHeaders().find("Content-Length")->second.c_str(), NULL, 10) && sock.get_Resp().getFile() != "")
+    else if ((sock.get_Resp().getOffset() + 1024) > strtoul(sock.get_Resp().getHeaders().find("Content-Length")->second.c_str(), NULL, 10) && sock.get_Resp().getFile() != "")
     {
         read(sock.get_Resp().getFd(), buffer, stoi(sock.get_Resp().getHeaders().find("Content-Length")->second) - sock.get_Resp().getOffset());
         rc = write(sock.getSocket_fd() , buffer , stoi(sock.get_Resp().getHeaders().find("Content-Length")->second) - sock.get_Resp().getOffset());
@@ -178,7 +178,7 @@ void MultiPlexing::handleWriteData(Socket &sock)
     }
     if (rc < 0)
     {
-        perror("  write() failed");
+        std::cerr << "Error writing to client socket" << std::endl;
         sock.setWrite_done(1);
     }
 }

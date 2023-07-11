@@ -60,6 +60,7 @@ class Request {
         std::string getHost();
         std::string getQuery() const;
         std::string getFile() const;
+        void setFile(std::string file);
         time_t      getTimeOut();
         bool        getConn();
         void        clear();

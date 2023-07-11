@@ -10,8 +10,6 @@ Server::Server()
     _ip = "";
     _serverNames.clear();
     _locations.clear();
-    _index.clear();
-    _root = "";
     _default = false;
     end_server = 0;
     max_sd = 0;
@@ -161,27 +159,36 @@ void Location::setError_pages(std::vector<std::pair<int, std::string> > error_pa
     this->_error_pages = error_pages;
 }
 
-void Server::setRoot(std::string root)
-{
-    this->_root = root;
-}
-
-std::string &Server::getRoot()
-{
-    return this->_root;
-}
-
-std::vector<std::string> &Server::getIndex()
-{
-    return this->_index;
-}
-
-void Server::setIndex(std::vector<std::string> index)
-{
-    this->_index = index;
-}
-
 std::vector< Cgi > & Location::get_cgi()
 {
     return this->_cgi;
+}
+
+Location &Server::getDefaultLocation()
+{
+    return this->l_default;
+}
+
+void Server::setDefaultLocation(Location &defautLocation)
+{
+    this->l_default = defautLocation;
+}
+
+Location &Location::operator=(Location const &rhs)
+{
+    if (this != &rhs)
+    {
+        this->_locationNumber = rhs._locationNumber;
+        this->_locationPath = rhs._locationPath;
+        this->_clientMaxBodySize = rhs._clientMaxBodySize;
+        this->_error_pages = rhs._error_pages;
+        this->_cgi = rhs._cgi;
+        this->_root = rhs._root;
+        this->_index = rhs._index;
+        this->_autoIndex = rhs._autoIndex;
+        this->_allowedMethods = rhs._allowedMethods;
+        this->_uploadPath = rhs._uploadPath;
+        this->_redirection = rhs._redirection;
+    }
+    return *this;
 }

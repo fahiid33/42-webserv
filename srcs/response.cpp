@@ -41,6 +41,9 @@ Response & Response::operator=(const Response &resp)
     this->_resp = resp._resp;
     this->mime_types = resp.mime_types;
     this->_content_type = resp._content_type;
+    this->_status_code = resp._status_code;
+    this->headers = resp.headers;
+    this->errorMessages = resp.errorMessages;
     return *this;
 }
 
@@ -53,6 +56,7 @@ void Response::clear()
     this->_resp = std::make_pair("", 0);
     this->_content_type = "";
     this->_status_code = 0;
+    this->headers.clear();
 }
 
 size_t last_char_pos(std::string str, std::string str2)
@@ -218,6 +222,7 @@ void Response::HandleGet(Request &req, Location &loc)
         }
         for (it = loc.getIndex().begin(); it != loc.getIndex().end(); it++) {
             if (file_exists((request_resource + *it).c_str())) {
+                req.setFile(*it);
                 request_resource += *it;
                 break;
             }
@@ -241,33 +246,31 @@ void Response::HandleGet(Request &req, Location &loc)
 
     if (!loc.get_cgi().empty()) {
         ext = (loc.get_cgi()[0].get_Cgi().second);
-        ext1 = (loc.get_cgi()[1].get_Cgi().second);
+        if (loc.get_cgi().size() > 1)
+            ext1 = (loc.get_cgi()[1].get_Cgi().second);
     }
 
-    if (loc.get_cgi().empty() || (req.getFile().find(ext) + ext.length() != req.getFile().size() && req.getFile().find(ext1) + ext1.length() != req.getFile().size())) {
+    std::string reqext = req.getFile().substr(req.getFile().find_last_of("."));
+    std::cout << "reqext: " << reqext << std::endl;
+    if (loc.get_cgi().empty() || (ext != reqext && ext1 != reqext)) {
         setHeader("Status", "200 OK");
         setStatusCode(200);
         setHeader("Content-Type", contentType);
         file.open(request_resource, std::ios::binary | std::ios::ate);
         setHeader("Content-Length", std::to_string(file.tellg()));
-        setHeader("Connection", "Keep-Alive");
-        if (req.getHeaders().find("Cookie") != req.getHeaders().end())
-            setHeader("Set-Cookie", req.getHeaders().find("Cookie")->second);
-        else
+        if (req.getHeaders().find("Cookie") == req.getHeaders().end())
             setHeader("Set-Cookie", "lala=hehe; Path=/");
         file.close();
         this->file = request_resource;
-        
         return ;
 
     }
-    else if (req.getFile().find(ext) + ext.length() == req.getFile().size()) {
+    else if (ext == reqext) {
         if (loc.get_cgi()[0].OK()) {
             loc.get_cgi()[0].runCgi(req, loc, *this);
             return ;
         }
-
-    } else if (req.getFile().find(ext1) + ext1.length() == req.getFile().size()) {
+    } else if (ext1 == reqext) {
         if (loc.get_cgi()[1].OK()) {
             loc.get_cgi()[1].runCgi(req, loc, *this);
             return ;
@@ -330,6 +333,7 @@ void Response::generateErrorPage(int code, Location const &loc)
         _resp.second = errorPage.length();
     }
     else {
+        std::cout << "haadd zbya: " << code << std::endl;
         this->setHeader ("Status", "500 Internal Server Error");
         this->setHeader ("Content-Type", "text/html");
         _resp.first = "<!DOCTYPE html>\n";
@@ -346,8 +350,7 @@ std::vector<Location>::iterator   Response::match_loc(Server & server, std::stri
     std::vector<Location>::iterator it = server.getLocations().begin();
     std::vector<Location>::iterator ite = server.getLocations().end();
 
-    while (it != server.getLocations().end())
-    {
+    while (it != server.getLocations().end()) {
         if (path.find(it->getLocationPath()) != std::string::npos) {
             if (it->getLocationPath() == "/") {
                 ite = it;
@@ -359,7 +362,11 @@ std::vector<Location>::iterator   Response::match_loc(Server & server, std::stri
         it++;
     }
     if (it == server.getLocations().end() && ite == server.getLocations().end()) {
-        this->generateErrorPage(404, Location(-1));
+        if (server.getDefaultLocation().getRoot() != "") {
+            return it;
+        }
+        else
+            this->generateErrorPage(404, Location(-1));
         return it;
     } else if (it == server.getLocations().end() && ite != server.getLocations().end())
         it = ite;
@@ -388,7 +395,8 @@ int	Response::write_file_in_path(Location &client, std::vector<unsigned char> co
         buf[i] = content[i];
 
 	int r = write(write_fd, buf, content.size());
-	if (r < 0)
+	delete [] buf;
+    if (r < 0)
 	{	
 		generateErrorPage(500, client);
 		close(write_fd);
@@ -400,18 +408,35 @@ int	Response::write_file_in_path(Location &client, std::vector<unsigned char> co
 
 void Response::HandlePost(Request &req, Location &loc)
 {
+    std::vector<std::string>::iterator it;
+
+    std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
+        std::cout << "reque " << request_resource << std::endl;
+    if (isDirectory(request_resource.c_str())) {
+            if (request_resource[request_resource.length() - 1] != '/')
+                request_resource += "/";
+            if(!loc.getIndex().empty()){
+                req.setFile(loc.getIndex()[0]);
+                request_resource += req.getFile();
+            }
+            else
+            {
+                generateErrorPage(403, loc);
+                return ;
+            }
+    }
     std::string ext("");
     std::string ext1("");
 
-    std::string request_resource = loc.getRoot() + req.getPath() + req.getFile();
-   
     if (!loc.get_cgi().empty()) {
         ext = (loc.get_cgi()[0].get_Cgi().second);
-        ext1 = (loc.get_cgi()[1].get_Cgi().second);
-    } 
-    std::cout << ext << " " << ext1 << std::endl;
+        if (loc.get_cgi().size() > 1)
+            ext1 = (loc.get_cgi()[1].get_Cgi().second);
+    }
 
-    if (loc.getUploadPath() && (loc.get_cgi().empty() || (req.getFile().find(ext) + ext.length() != req.getFile().size() && req.getFile().find(ext1) + ext1.length() != req.getFile().size()))) {
+    std::string reqext = req.getFile().substr(req.getFile().find_last_of("."));
+
+    if (loc.getUploadPath() && (loc.get_cgi().empty() || (ext != reqext && ext1 != reqext))) {
         if (loc.getClientMaxBodySize() < req.getBody().size()) {
             generateErrorPage(413, loc);
             return ;
@@ -433,7 +458,6 @@ void Response::HandlePost(Request &req, Location &loc)
         _resp.second = _resp.first.length();
         return ;
     }
-        
 
     else if (req.getFile().find(ext) + ext.length() == req.getFile().size()) {
         if (loc.get_cgi()[0].OK()) {
@@ -557,6 +581,7 @@ void Response::initErrorMessages()
     errorMessages[404] = "Not Found";
     errorMessages[403] = "Forbidden";
     errorMessages[301] = "Moved Permanently";
+    errorMessages[302] = "Found";
     errorMessages[204] = "No Content";
     errorMessages[201] = "Created";
     errorMessages[200] = "OK";
@@ -570,29 +595,42 @@ void Response::initErrorMessages()
 
 void  Response::prepare_response(Request & req, Server & server)
 {
+
     std::vector<Location>::iterator it = this->match_loc(server, req.getPath());
+    Location loc;
+    
     if (it == server.getLocations().end())
-        return ;
+    {
+        if (server.getDefaultLocation().getRoot() != "") {
+            loc = server.getDefaultLocation();
+        } else {
+            generateErrorPage(403, *it);
+            return ;
+        }
+    }
+
+    else
+        loc = *it;
     if (_status_code != 0) {
-        generateErrorPage(_status_code, *it);
+        generateErrorPage(_status_code, loc);
         return ;
     }
-    if (it->getRedirection().first != "") {
-        generateErrorPage(301, *it);
-        setHeader("Location", it->getRedirection().first);
+    if (loc.getRedirection().first != "") {
+        generateErrorPage(std::stoi(loc.getRedirection().first), loc);
+        setHeader("Location", loc.getRedirection().second);
         return ;
     }
-    if (std::find(it->getAllowedMethods().begin(), it->getAllowedMethods().end(), req.getMethod()) == it->getAllowedMethods().end()) {
-        generateErrorPage(405, *it);
+    if (std::find(loc.getAllowedMethods().begin(), loc.getAllowedMethods().end(), req.getMethod()) == loc.getAllowedMethods().end()) {
+        generateErrorPage(405, loc);
         return ;
     }
     if (req.getMethod() == "GET") {
         std::cout << "GET" << std::endl;
-        HandleGet(req, *it);
+        HandleGet(req, loc);
     } else if (req.getMethod() == "POST") {
-        HandlePost(req, *it);
+        HandlePost(req, loc);
     } else if (req.getMethod() == "DELETE") {
-        HandleDelete(req, *it);
+        HandleDelete(req, loc);
     }
 }
 

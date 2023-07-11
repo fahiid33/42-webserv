@@ -135,7 +135,6 @@ void Cgi::runCgi(Request &req, Location &loc, Response &_resp)
     }
     _resp.setHeader("Status", "200 OK");
     _resp.setHeader("Content-Type", "text/html; charset=UTF-8");
-    _resp.setHeader("Connection", "close");
     _resp.setHeader("Content-Length", std::to_string(output.str().length()));
     _resp.setResp(std::make_pair(output.str(), output.str().length()));
 }

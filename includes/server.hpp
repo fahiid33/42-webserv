@@ -47,6 +47,7 @@ class Location
         Location();
         Location(int a) : a(a) {};
         ~Location();
+        Location &operator=(const Location &location);
 
         std::string                                         & getLocationNumber();
         std::string                                         & getLocationPath();
@@ -119,8 +120,7 @@ class Server
 
         std::vector<std::string> _serverNames;
         std::vector<Location> _locations;
-        std::string _root;
-        std::vector<std::string> _index;
+        Location              l_default;
         int max_sd;
         int end_server;
         
@@ -131,6 +131,8 @@ class Server
         fd_set& getMasterSet();
         fd_set& getWriteFds();
         fd_set& getWriteCpy();
+        Location & getDefaultLocation();
+        void setDefaultLocation(Location & l_default);
         fd_set& getWorkingSet();
         Socket & getServerSocket();
         void   setDefault(bool Default);
@@ -142,8 +144,6 @@ class Server
         std::vector<Location> & getLocations();
         std::string & getIp();
         int getServerFd();
-        std::string & getRoot();
-        std::vector<std::string>    & getIndex();
         int getMaxSd();
 
         
@@ -155,15 +155,13 @@ class Server
         void    setServerNames(std::vector<std::string> serverNames);
         void    setLocations(std::vector<Location> locations);
         void    setIp(std::string ip);
-        void    setRoot(std::string root);
-        void    setIndex(std::vector<std::string> index);
         void    print_server(){
             std::cout << "port : " << _port << std::endl;
             std::cout << "ip : " << _ip << std::endl;
-            std::cout << "root : " << _root << std::endl;
+            std::cout << "root : " << l_default.getRoot() << std::endl;
             std::cout << "index : ";
-            for (size_t i = 0; i < _index.size(); i++)
-                std::cout << _index[i] << " ";
+            for (size_t i = 0; i < l_default.getIndex().size(); i++)
+                std::cout << l_default.getIndex()[i] << " ";
             std::cout << std::endl;
             std::cout << "serverNames : ";
             for (size_t i = 0; i < _serverNames.size(); i++)
