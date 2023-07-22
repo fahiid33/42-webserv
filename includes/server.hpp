@@ -127,6 +127,9 @@ class Server
     public:
         Server();
         ~Server();
+
+        Server & operator=(const Server &server);
+        Server(const Server &server);
         void setMasterSet(int fd);
         fd_set& getMasterSet();
         fd_set& getWriteFds();

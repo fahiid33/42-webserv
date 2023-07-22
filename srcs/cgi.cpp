@@ -93,7 +93,6 @@ void Cgi::runCgi(Request &req, Location &loc, Response &_resp)
     int fdtmp = dup(0);
     // execute cgi
     this->initEnv(req, "localhost", loc.getRoot());
-    std::cout << "Init Env" << std::endl;
     pipe(fdin);
     pipe(fdout);
     child_pid = fork();

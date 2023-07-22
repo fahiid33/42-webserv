@@ -42,7 +42,6 @@ class MultiPlexing
         typedef std::vector< std::pair<Socket, Server> > Clients;
         typedef std::unordered_map<int, std::vector<Server> > Servers;
     private :
-        // Server server;
         IOsets io;
         MultiPlexing::Clients clients;
         int max_sd;

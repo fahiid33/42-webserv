@@ -276,7 +276,7 @@ void    MultiPlexing::handleNewConnection(Server & server, Clients & clients)
             server.setEndServer(1);
         }
     }
-    std::cout << GREEN << "++++++++++++++ connection aceepeted " << new_socket << " on : " << server.getPort()  << " ++++++++++++++" << std::endl;
+    std::cout << GREEN << "++++++++++++++ connection accepeted on socket " << new_socket << " on port " << server.getPort()  << " ++++++++++++++" << std::endl;
     if ((fcntl(new_socket, F_SETFL, O_NONBLOCK)) <  0) {
         perror("In fcntl");
         exit(EXIT_FAILURE);

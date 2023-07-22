@@ -335,7 +335,6 @@ void Response::generateErrorPage(int code, Location const &loc)
         _resp.second = errorPage.length();
     }
     else {
-        std::cout << "haadd zbya: " << code << std::endl;
         this->setHeader ("Status", "500 Internal Server Error");
         this->setHeader ("Content-Type", "text/html");
         _resp.first = "<!DOCTYPE html>\n";
@@ -393,8 +392,9 @@ int	Response::write_file_in_path(Location &client, std::vector<unsigned char> co
 	}
     
     char *buf = new char[content.size() + 1];
-    for (size_t i = 0; i < content.size(); i++)
+    for (size_t i = 0; i < content.size(); i++){
         buf[i] = content[i];
+    }
 
 	int r = write(write_fd, buf, content.size());
 	delete [] buf;
@@ -444,7 +444,6 @@ void Response::HandlePost(Request &req, Location &loc)
             generateErrorPage(413, loc);
             return ;
         }
-        std::cout << "HHAHAHAHAHHA" << std::endl;
         this->write_file_in_path(loc, req.getBody(), request_resource);
         setHeader("Status", "201 Created");
         setHeader("Content-Type", "text/html");
@@ -628,7 +627,6 @@ void  Response::prepare_response(Request & req, Server & server)
         return ;
     }
     if (req.getMethod() == "GET") {
-        std::cout << "GET" << std::endl;
         HandleGet(req, loc);
     } else if (req.getMethod() == "POST") {
         HandlePost(req, loc);
