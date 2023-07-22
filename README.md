@@ -39,13 +39,8 @@ Webserv is a powerful HTTP server written in C++ 98, inspired by popular web ser
 - **Multiple CGI Handling**: The server can handle multiple CGI types, such as php-CGI, Python, etc., allowing you to integrate various scripting languages seamlessly.
 
 ## Usage
+    #./webserv [configuration file]
+or if you want to work with the default config
+    #./webserv
+The server will start listening on the specified ports and will be ready to accept incoming HTTP requests.
 
-To run Webserv, follow these steps:
-
-1. Compile the source code using a C++98 compatible compiler.
-
-2. Execute the compiled binary, providing a configuration file as an argument or using the default configuration path.
-
-3. The server will start listening on the specified ports and will be ready to accept incoming HTTP requests.
-
-For detailed instructions and examples of the configuration file format, please refer to the [Wiki](https://github.com/yourusername/webserv/wiki).
