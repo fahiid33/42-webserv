@@ -41,6 +41,7 @@ Webserv is a powerful HTTP server written in C++ 98, inspired by popular web ser
 ## Usage
     #./webserv [configuration file]
 or if you want to work with the default config
+
     #./webserv
 The server will start listening on the specified ports and will be ready to accept incoming HTTP requests.
 
