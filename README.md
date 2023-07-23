@@ -1,4 +1,4 @@
-# Webserv - An Advanced HTTP Server in C++ 98
+# Webserv - An HTTP Server in C++ 98
 
 ![GitHub](https://img.shields.io/badge/C%2B%2B-98-blue)
 ![Status](https://img.shields.io/badge/Status-Under%20Development-orange)
